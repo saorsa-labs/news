@@ -532,6 +532,16 @@ a:hover { text-decoration: underline; }
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
 }
+.sources-empty {
+  text-align: center;
+  padding: 56px 20px;
+  color: var(--text-2);
+  background: var(--bg-1);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+.sources-empty .icon { font-size: 36px; margin-bottom: 10px; }
+.sources-empty button { margin-top: 14px; }
 .source-card {
   background: var(--bg-1);
   border: 1px solid var(--border);
@@ -620,12 +630,23 @@ a:hover { text-decoration: underline; }
   padding: 14px 16px;
   background: var(--bg-1);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  gap: 12px;
+  border-radius: var(--radius);
+  gap: 14px;
   flex-wrap: wrap;
 }
 .sources-toolbar .stats { color: var(--text-2); font-size: 13px; }
 .sources-toolbar .stats b { color: var(--text); }
+.sources-toolbar .stats .sep { color: var(--text-3); margin: 0 6px; }
+.sources-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.sources-filter-bar .chip { padding: 6px 12px; font-weight: 500; }
+.sources-filter-bar .chip.health-loaded::before { content: "●"; color: var(--jobs); margin-right: 5px; font-size: 8px; vertical-align: middle; }
+.sources-filter-bar .chip.health-failed::before { content: "●"; color: #ff6b8a; margin-right: 5px; font-size: 8px; vertical-align: middle; }
+.sources-filter-bar .chip.health-custom::before { content: "✨"; margin-right: 4px; font-size: 11px; }
 
 /* Modal */
 .modal-backdrop {
@@ -789,7 +810,7 @@ a:hover { text-decoration: underline; }
     <div id="view-timeline" class="timeline"></div>
     <div id="view-videos" class="video-grid hidden"></div>
     <div id="view-podcasts" class="timeline hidden"></div>
-    <div id="view-sources" class="sources-grid hidden"></div>
+    <div id="view-sources" class="hidden"></div>
     <div id="empty-state" class="state hidden">
       <div class="icon">📭</div>
       <div>No items match your filters yet.</div>
@@ -1193,10 +1214,20 @@ function renderVideos() {
   }).join('');
 }
 
+// Local-only filter for the Sources tab — independent of the sidebar Category
+// filter (which is meant for items, not the catalogue browser).
+const sourcesViewState = {
+  cat: 'all',          // 'all' | 'News' | 'Podcasts' | 'Videos' | 'Jobs'
+  health: 'all',       // 'all' | 'loaded' | 'failed' | 'custom'
+};
+
 function renderSources() {
   const q = state.query.toLowerCase();
   const filtered = SOURCES.filter(s => {
-    if (state.catFilter.size && !state.catFilter.has(s.category)) return false;
+    if (sourcesViewState.cat !== 'all' && s.category !== sourcesViewState.cat) return false;
+    if (sourcesViewState.health === 'loaded' && !state.loadedSources.has(s.feed)) return false;
+    if (sourcesViewState.health === 'failed' && !state.failedSources.has(s.feed)) return false;
+    if (sourcesViewState.health === 'custom' && !s.isCustom) return false;
     if (state.tagFilter.size && !(s.tags || []).some(t => state.tagFilter.has(t))) return false;
     if (q) {
       const hay = (s.title + ' ' + (s.description || '') + ' ' + s.feed).toLowerCase();
@@ -1204,50 +1235,112 @@ function renderSources() {
     }
     return true;
   });
-  // Sort custom first
   filtered.sort((a, b) => Number(!!b.isCustom) - Number(!!a.isCustom));
-  const customCount = CUSTOM_FEEDS.length;
+
+  // Live category counts (respect search but ignore the cat pill itself,
+  // so the user can see how many are in each bucket).
+  const baseQ = SOURCES.filter(s => {
+    if (q) {
+      const hay = (s.title + ' ' + (s.description || '') + ' ' + s.feed).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (state.tagFilter.size && !(s.tags || []).some(t => state.tagFilter.has(t))) return false;
+    return true;
+  });
+  const catCounts = baseQ.reduce((acc, s) => { acc[s.category] = (acc[s.category]||0)+1; return acc; }, {});
+  const loadedCount = baseQ.filter(s => state.loadedSources.has(s.feed)).length;
+  const failedCount = baseQ.filter(s => state.failedSources.has(s.feed)).length;
+  const customCount = baseQ.filter(s => s.isCustom).length;
+
+  const cat = sourcesViewState.cat;
+  const health = sourcesViewState.health;
   const toolbar = `
     <div class="sources-toolbar">
       <div class="stats">
-        <b>${SOURCES.length}</b> total · <b>${customCount}</b> custom · <b>${BUILTIN_SOURCES.length}</b> built-in
+        <b>${filtered.length}</b> shown
+        <span class="sep">·</span>
+        <b>${SOURCES.length}</b> total
+        <span class="sep">·</span>
+        <b>${CUSTOM_FEEDS.length}</b> custom
       </div>
       <button class="btn primary" id="sources-add-btn">+ Add custom feed</button>
     </div>
-  `;
-  const cards = filtered.map(s => {
-    const customMarker = s.isCustom
-      ? `<span class="custom-badge">custom</span>`
-      : '';
-    const removeBtn = s.isCustom
-      ? `<button class="remove-btn" data-remove="${escAttr(s.feed)}" title="Remove this feed">remove</button>`
-      : '';
-    return `
-    <div class="source-card${s.isCustom ? ' is-custom' : ''}">
-      <div class="meta" style="margin-bottom:6px;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span class="src-pill ${s.category}">${escText(s.category)}</span>
-          ${customMarker}
-        </div>
-        ${state.loadedSources.has(s.feed) ? '<span style="color:var(--text-3);font-size:11px">✓ loaded</span>' :
-          state.failedSources.has(s.feed) ? '<span style="color:#ff6b8a;font-size:11px">✕ failed</span>' :
-          '<span style="color:var(--text-3);font-size:11px">·</span>'}
-      </div>
-      <h4><a href="${escAttr(s.homepage || s.feed)}" target="_blank" rel="noopener">${escText(s.title)}</a></h4>
-      <div class="desc">${escText(s.description || '')}</div>
-      <div class="footer">
-        <span>${(s.tags || []).map(t => escText(t)).join(' · ') || '—'}</span>
-        <span style="display:flex;gap:6px;align-items:center">
-          ${removeBtn}
-          <a href="${escAttr(s.feed)}" target="_blank" rel="noopener" title="${escAttr(s.feed)}">RSS</a>
-        </span>
-      </div>
+    <div class="sources-filter-bar" id="sources-cat-bar">
+      <button class="chip${cat==='all'?' active':''}" data-cat="all">All <span style="opacity:.6">${baseQ.length}</span></button>
+      <button class="chip${cat==='News'?' active':''}" data-cat="News">News <span style="opacity:.6">${catCounts.News||0}</span></button>
+      <button class="chip${cat==='Podcasts'?' active':''}" data-cat="Podcasts">Podcasts <span style="opacity:.6">${catCounts.Podcasts||0}</span></button>
+      <button class="chip${cat==='Videos'?' active':''}" data-cat="Videos">Videos <span style="opacity:.6">${catCounts.Videos||0}</span></button>
+      <button class="chip${cat==='Jobs'?' active':''}" data-cat="Jobs">Jobs <span style="opacity:.6">${catCounts.Jobs||0}</span></button>
+      <span style="flex:1"></span>
+      <button class="chip health-loaded${health==='loaded'?' active':''}" data-health="loaded" title="Sources whose feed loaded successfully">Loaded <span style="opacity:.6">${loadedCount}</span></button>
+      <button class="chip health-failed${health==='failed'?' active':''}" data-health="failed" title="Sources whose feed failed to load">Failed <span style="opacity:.6">${failedCount}</span></button>
+      <button class="chip health-custom${health==='custom'?' active':''}" data-health="custom" title="Your custom feeds">Custom <span style="opacity:.6">${customCount}</span></button>
     </div>
   `;
-  }).join('');
-  els.sources.innerHTML = toolbar + `<div class="sources-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:12px">${cards}</div>`;
-  // Wire up the in-tab buttons
+
+  let body;
+  if (filtered.length === 0) {
+    body = `
+      <div class="sources-empty">
+        <div class="icon">🔎</div>
+        <div>No sources match your filters.</div>
+        <button class="btn" id="sources-clear-btn">Clear filters</button>
+      </div>`;
+  } else {
+    const cards = filtered.map(s => {
+      const customMarker = s.isCustom ? `<span class="custom-badge">custom</span>` : '';
+      const removeBtn = s.isCustom
+        ? `<button class="remove-btn" data-remove="${escAttr(s.feed)}" title="Remove this feed">remove</button>`
+        : '';
+      const status = state.loadedSources.has(s.feed)
+        ? '<span style="color:var(--jobs);font-size:11px;font-weight:600">● loaded</span>'
+        : state.failedSources.has(s.feed)
+          ? '<span style="color:#ff6b8a;font-size:11px;font-weight:600">● failed</span>'
+          : '<span style="color:var(--text-3);font-size:11px">○ pending</span>';
+      return `
+        <div class="source-card${s.isCustom ? ' is-custom' : ''}">
+          <div class="meta" style="margin-bottom:6px;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="src-pill ${s.category}">${escText(s.category)}</span>
+              ${customMarker}
+            </div>
+            ${status}
+          </div>
+          <h4><a href="${escAttr(s.homepage || s.feed)}" target="_blank" rel="noopener">${escText(s.title)}</a></h4>
+          <div class="desc">${escText(s.description || '')}</div>
+          <div class="footer">
+            <span>${(s.tags || []).map(t => escText(t)).join(' · ') || '—'}</span>
+            <span style="display:flex;gap:6px;align-items:center">
+              ${removeBtn}
+              <a href="${escAttr(s.feed)}" target="_blank" rel="noopener" title="${escAttr(s.feed)}">RSS</a>
+            </span>
+          </div>
+        </div>`;
+    }).join('');
+    body = `<div class="sources-grid">${cards}</div>`;
+  }
+
+  els.sources.innerHTML = toolbar + body;
+
+  // Wire up
   document.getElementById('sources-add-btn')?.addEventListener('click', openAddFeedModal);
+  document.getElementById('sources-clear-btn')?.addEventListener('click', () => {
+    sourcesViewState.cat = 'all';
+    sourcesViewState.health = 'all';
+    state.tagFilter.clear();
+    document.querySelectorAll('#tag-list .filter-item').forEach(x => x.classList.remove('active'));
+    state.query = '';
+    document.getElementById('search').value = '';
+    renderAll();
+  });
+  els.sources.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => {
+    sourcesViewState.cat = b.dataset.cat;
+    renderSources();
+  }));
+  els.sources.querySelectorAll('[data-health]').forEach(b => b.addEventListener('click', () => {
+    sourcesViewState.health = sourcesViewState.health === b.dataset.health ? 'all' : b.dataset.health;
+    renderSources();
+  }));
   els.sources.querySelectorAll('[data-remove]').forEach(btn => {
     btn.addEventListener('click', () => removeCustomFeed(btn.getAttribute('data-remove')));
   });
