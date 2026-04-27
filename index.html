@@ -982,12 +982,17 @@ function buildSidebar() {
   els.cntSources.textContent = SOURCES.length;
 }
 
-function applyFilters(items) {
+function applyFilters(items, opts) {
+  // opts.skipCat — used by the Videos/Podcasts top-tabs which already ARE
+  // a category view; the sidebar Category filter shouldn't AND-intersect
+  // with them (otherwise selecting "Podcasts" in the sidebar would empty
+  // out the Videos tab, etc.).
+  const skipCat = !!(opts && opts.skipCat);
   const q = state.query.toLowerCase();
   const win = timeWindowMs(state.timeFilter);
   const now = Date.now();
   return items.filter(it => {
-    if (state.catFilter.size && !state.catFilter.has(it.sourceCategory)) return false;
+    if (!skipCat && state.catFilter.size && !state.catFilter.has(it.sourceCategory)) return false;
     if (state.tagFilter.size) {
       const has = (it.sourceTags || []).some(t => state.tagFilter.has(t));
       if (!has) return false;
@@ -1014,7 +1019,10 @@ function sortItems(items) {
 }
 
 function renderTimeline() {
-  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory !== 'Videos')));
+  // Timeline shows ALL categories filtered by the sidebar — including videos
+  // (as cards) and podcasts. This way clicking "Videos" or "Podcasts" in the
+  // sidebar always shows something meaningful instead of an empty list.
+  const items = sortItems(applyFilters(state.items));
   els.cntTimeline.textContent = items.length;
   if (!items.length) {
     els.timeline.innerHTML = '';
@@ -1028,7 +1036,10 @@ function renderTimeline() {
 }
 
 function renderPodcasts() {
-  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Podcasts')));
+  // Podcasts tab IS the Podcasts category view — bypass the sidebar Category
+  // filter so it always shows podcasts, regardless of what's checked in
+  // the sidebar.
+  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Podcasts'), { skipCat: true }));
   els.cntPodcasts.textContent = items.length;
   if (!items.length) {
     els.podcasts.innerHTML = '<div class="state"><div class="icon">🎙️</div><div>No podcast episodes loaded yet.</div></div>';
@@ -1038,7 +1049,10 @@ function renderPodcasts() {
 }
 
 function renderVideos() {
-  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Videos')));
+  // Videos tab IS the Videos category view — bypass the sidebar Category
+  // filter so it always shows videos, regardless of what's checked in
+  // the sidebar.
+  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Videos'), { skipCat: true }));
   els.cntVideos.textContent = items.length;
   if (!items.length) {
     els.videos.innerHTML = '<div class="state"><div class="icon">🎬</div><div>No videos loaded yet. Loading…</div></div>';
