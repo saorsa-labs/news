@@ -93,6 +93,13 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
   margin-top: 2px;
 }
+.brand .sub a {
+  color: var(--text-2);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-3);
+}
+.brand .sub a:hover { color: var(--text); border-bottom-color: var(--text-2); }
+.brand .sep { color: var(--text-3); margin: 0 4px; }
 .search-wrap {
   position: relative;
   max-width: 560px;
@@ -620,7 +627,7 @@ a:hover { text-decoration: underline; }
       <div class="logo">🤖</div>
       <div>
         <div>AI News Hub</div>
-        <div class="sub">269 sources · foorilla/allainews</div>
+        <div class="sub">269 sources<span class="sep">·</span><a href="https://github.com/foorilla/allainews_sources" target="_blank" rel="noopener" title="Source catalogue maintained by foorilla">foorilla/allainews</a><span class="sep">·</span><a href="https://github.com/saorsa-labs/news" target="_blank" rel="noopener" title="View source code on GitHub">saorsa-labs/news</a></div>
       </div>
     </div>
     <div class="search-wrap">

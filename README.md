@@ -10,7 +10,7 @@ No accounts. No tracking. No ads. Open it and read.
 
 **The easy way — works for everyone, no install:**
 
-👉 **<https://saorsa-labs.github.io/news/>**
+👉 **<https://news.saorsalabs.com/>**
 
 Bookmark that URL. That's the whole thing. It runs entirely in your browser and remembers your preferences locally.
 
@@ -20,13 +20,13 @@ If you'd rather launch from the terminal:
 
 ```bash
 # macOS
-open https://saorsa-labs.github.io/news/
+open https://news.saorsalabs.com/
 
 # Linux
-xdg-open https://saorsa-labs.github.io/news/
+xdg-open https://news.saorsalabs.com/
 
 # Windows (PowerShell)
-start https://saorsa-labs.github.io/news/
+start https://news.saorsalabs.com/
 ```
 
 ### Want a local copy that works offline-friendly?

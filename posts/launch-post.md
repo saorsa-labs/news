@@ -16,7 +16,7 @@ I spent an evening with Claude turning that list into a clean little reader. Sin
 
 It's live and free for anyone to use:
 
-👉 **https://saorsa-labs.github.io/news/**
+👉 **https://news.saorsalabs.com/**
 
 Bookmark it and you've got a quiet corner of the internet for actual research and news.
 
@@ -37,7 +37,7 @@ Got fed up with AI/ML news on socials — too much noise, not enough signal. So 
 Single page, no accounts, no tracking, no ads. Timeline / videos / podcasts / search / filters. Auto-updates every 30 mins.
 
 Free for anyone:
-👉 https://saorsa-labs.github.io/news/
+👉 https://news.saorsalabs.com/
 
 Or fork & self-host in 5 mins:
 🛠️ https://github.com/saorsa-labs/news
@@ -50,7 +50,7 @@ Less noise. More signal.
 
 I gave up on AI news on socials — too much noise. Built a wee RSS reader with Claude over foorilla's curated catalogue of 270+ AI feeds. No accounts, no tracking, free.
 
-👉 https://saorsa-labs.github.io/news/
+👉 https://news.saorsalabs.com/
 🛠️ https://github.com/saorsa-labs/news (MIT, fork & self-host)
 
 ---
@@ -61,7 +61,7 @@ Use this as a paragraph or pinned reply.
 
 > **Install it on your own machine — three options, easiest first:**
 >
-> **1. Just open the URL.** Bookmark <https://saorsa-labs.github.io/news/> — that's it. Your settings live in your browser only.
+> **1. Just open the URL.** Bookmark <https://news.saorsalabs.com/> — that's it. Your settings live in your browser only.
 >
 > **2. Local copy.** One terminal command:
 > ```

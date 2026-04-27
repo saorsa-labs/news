@@ -200,6 +200,13 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
   margin-top: 2px;
 }
+.brand .sub a {
+  color: var(--text-2);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-3);
+}
+.brand .sub a:hover { color: var(--text); border-bottom-color: var(--text-2); }
+.brand .sep { color: var(--text-3); margin: 0 4px; }
 .search-wrap {
   position: relative;
   max-width: 560px;
@@ -727,7 +734,7 @@ a:hover { text-decoration: underline; }
       <div class="logo">🤖</div>
       <div>
         <div>AI News Hub</div>
-        <div class="sub">__SOURCE_COUNT__ sources · foorilla/allainews</div>
+        <div class="sub">__SOURCE_COUNT__ sources<span class="sep">·</span><a href="https://github.com/foorilla/allainews_sources" target="_blank" rel="noopener" title="Source catalogue maintained by foorilla">foorilla/allainews</a><span class="sep">·</span><a href="https://github.com/saorsa-labs/news" target="_blank" rel="noopener" title="View source code on GitHub">saorsa-labs/news</a></div>
       </div>
     </div>
     <div class="search-wrap">
@@ -1805,7 +1812,7 @@ def fetch_one_feed(source: dict) -> tuple[str, dict | None, str | None]:
         # Some feeds (Reddit) reject default UA — feedparser supports request_headers.
         parsed = feedparser.parse(
             fetch_url,
-            agent="Mozilla/5.0 (compatible; saorsa-labs-news/1.0; +https://saorsa-labs.github.io/news/)",
+            agent="Mozilla/5.0 (compatible; saorsa-labs-news/1.0; +https://news.saorsalabs.com/)",
             request_headers={"Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8"},
         )
         if parsed.bozo and not parsed.entries:
