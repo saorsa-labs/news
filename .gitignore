@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Build artefacts (none expected — index.html is checked in)
+*.tmp
+
+# Playwright / scratch dirs
+.playwright-mcp/

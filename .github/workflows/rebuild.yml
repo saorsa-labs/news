@@ -1,0 +1,52 @@
+name: Rebuild from upstream
+
+# Pulls the latest README from foorilla/allainews_sources, regenerates
+# sources.json + index.html, and commits any changes. Runs weekly so the
+# source catalogue stays current. Can also be triggered manually from the
+# Actions tab.
+
+on:
+  schedule:
+    - cron: "17 4 * * 0"   # Sundays at 04:17 UTC
+  workflow_dispatch:
+  push:
+    paths:
+      - "build.py"
+      - ".github/workflows/rebuild.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run build
+        run: python3 build.py
+
+      - name: Commit any changes
+        run: |
+          git config user.name  "saorsa-labs-bot"
+          git config user.email "actions@github.com"
+          if git diff --quiet -- sources.json index.html; then
+            echo "No changes — upstream catalogue unchanged."
+            exit 0
+          fi
+          # Summarise the diff in the commit message
+          ADDED=$(git diff sources.json | grep -c '^+    "feed":' || true)
+          REMOVED=$(git diff sources.json | grep -c '^-    "feed":' || true)
+          git add sources.json index.html
+          git commit -m "chore: rebuild from upstream (+${ADDED} / -${REMOVED} feeds)"
+          git push

@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI News Hub — allainews aggregator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+<style>
+:root {
+  --bg: #0b0d10;
+  --bg-1: #11151a;
+  --bg-2: #181d24;
+  --bg-3: #232932;
+  --border: #262d36;
+  --text: #e6edf3;
+  --text-2: #9aa6b2;
+  --text-3: #6b7785;
+  --accent: #7c5cff;
+  --accent-2: #00d4ff;
+  --news: #4ea3ff;
+  --podcasts: #ff9f43;
+  --videos: #ff5c8a;
+  --jobs: #2ecc71;
+  --shadow: 0 8px 24px rgba(0,0,0,.35);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+[data-theme="light"] {
+  --bg: #f7f8fa;
+  --bg-1: #ffffff;
+  --bg-2: #f1f3f6;
+  --bg-3: #e6e9ef;
+  --border: #dde1e7;
+  --text: #1a1f26;
+  --text-2: #50596a;
+  --text-3: #8893a0;
+  --accent: #6243ff;
+  --accent-2: #0094c2;
+  --shadow: 0 6px 18px rgba(20,30,50,.08);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+a { color: var(--accent-2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- Header ---------- */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg-1) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-size: 18px;
+}
+.brand .logo {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center;
+  color: white; font-size: 18px;
+  box-shadow: var(--shadow);
+}
+.brand .sub {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.search-wrap {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+}
+.search-wrap input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 16px 10px 38px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-wrap input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.search-wrap .icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+.actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  appearance: none;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s, border-color .15s, transform .05s;
+}
+.btn:hover { background: var(--bg-3); }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: white;
+}
+.btn.icon-only { padding: 8px 10px; }
+
+.tabs {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.tab .count {
+  background: var(--bg-3);
+  color: var(--text-2);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+}
+.tab.active .count { background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--text); }
+
+/* ---------- Layout ---------- */
+.app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.sidebar {
+  position: sticky;
+  top: 110px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+}
+.sidebar h3 {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 16px 0 8px;
+  font-weight: 700;
+}
+.sidebar h3:first-child { margin-top: 0; }
+.filter-list { display: flex; flex-direction: column; gap: 4px; }
+.filter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-2);
+  user-select: none;
+  border: 1px solid transparent;
+}
+.filter-item:hover { background: var(--bg-2); color: var(--text); }
+.filter-item.active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.filter-item .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.dot.News { background: var(--news); }
+.dot.Podcasts { background: var(--podcasts); }
+.dot.Videos { background: var(--videos); }
+.dot.Jobs { background: var(--jobs); }
+.filter-item .label-wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
+.filter-item .label-wrap > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-item .num { color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.progress-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.progress-card .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+.progress-bar {
+  height: 6px; background: var(--bg-3); border-radius: 999px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  width: 0%; transition: width .3s ease;
+}
+.progress-card .controls { display: flex; gap: 6px; margin-top: 10px; }
+.progress-card .btn { padding: 6px 10px; font-size: 12px; flex: 1; justify-content: center; }
+
+/* ---------- Main ---------- */
+.main { min-width: 0; }
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.toolbar .info { color: var(--text-2); font-size: 13px; }
+.toolbar .info b { color: var(--text); }
+.toolbar .sort { display: flex; gap: 6px; }
+.chip {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.chip:hover { color: var(--text); }
+.chip.active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+/* Cards */
+.timeline { display: grid; gap: 12px; }
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  transition: border-color .15s, transform .05s;
+}
+.card:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.card .meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.card .src-pill {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+}
+.card .src-pill.News { color: var(--news); border-color: color-mix(in srgb, var(--news) 35%, var(--border)); }
+.card .src-pill.Podcasts { color: var(--podcasts); border-color: color-mix(in srgb, var(--podcasts) 35%, var(--border)); }
+.card .src-pill.Videos { color: var(--videos); border-color: color-mix(in srgb, var(--videos) 35%, var(--border)); }
+.card .src-pill.Jobs { color: var(--jobs); border-color: color-mix(in srgb, var(--jobs) 35%, var(--border)); }
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -.005em;
+}
+.card h2 a { color: var(--text); }
+.card h2 a:hover { color: var(--accent-2); text-decoration: none; }
+.card .summary {
+  color: var(--text-2);
+  font-size: 14px;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card.has-thumb { display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+.card.has-thumb .thumb {
+  width: 200px; height: 112px;
+  border-radius: 10px;
+  background: var(--bg-2) center/cover no-repeat;
+  flex-shrink: 0;
+}
+.card .tag-row { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.card .tag {
+  font-size: 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--text-2);
+}
+
+/* Video grid */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.video-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: transform .15s, border-color .15s;
+}
+.video-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  transform: translateY(-2px);
+}
+.video-card .thumb {
+  aspect-ratio: 16/9;
+  background: var(--bg-2) center/cover no-repeat;
+  position: relative;
+}
+.video-card .thumb::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.6));
+  pointer-events: none;
+}
+.video-card .play {
+  position: absolute;
+  inset: 0;
+  display: grid; place-items: center;
+  color: white; font-size: 36px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.video-card:hover .play { opacity: 1; }
+.video-card .body { padding: 12px 14px; }
+.video-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.video-card h3 a { color: var(--text); }
+.video-card .meta { font-size: 12px; color: var(--text-2); display: flex; justify-content: space-between; }
+
+/* Sources tab */
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.source-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  transition: border-color .15s;
+}
+.source-card:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.source-card h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.source-card h4 a { color: var(--text); }
+.source-card .desc {
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 4px 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.source-card .footer { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); }
+
+/* States */
+.state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-2);
+}
+.state .icon { font-size: 40px; margin-bottom: 12px; }
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-banner {
+  background: color-mix(in srgb, #ff4d6d 15%, transparent);
+  border: 1px solid color-mix(in srgb, #ff4d6d 40%, transparent);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+/* Custom feed badge + remove button */
+.source-card.is-custom { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.custom-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.remove-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.remove-btn:hover { background: color-mix(in srgb, #ff4d6d 15%, transparent); border-color: #ff4d6d; color: var(--text); }
+
+/* Sources tab toolbar */
+.sources-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sources-toolbar .stats { color: var(--text-2); font-size: 13px; }
+.sources-toolbar .stats b { color: var(--text); }
+
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(8, 10, 14, .65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid; place-items: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fade .15s ease;
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  overflow: hidden;
+  animation: pop .2s cubic-bezier(.2,.8,.3,1.2);
+}
+@keyframes pop { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.modal header .close {
+  background: none; border: none; color: var(--text-2);
+  font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 8px;
+  border-radius: 6px;
+}
+.modal header .close:hover { background: var(--bg-2); color: var(--text); }
+.modal .body { padding: 18px 20px; }
+.modal .field { margin-bottom: 14px; }
+.modal .field label {
+  display: block; margin-bottom: 6px;
+  font-size: 12px; color: var(--text-2); font-weight: 500;
+}
+.modal .field input, .modal .field select {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.modal .field input:focus, .modal .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.modal .field .help { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.modal .feedback {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.modal .feedback.error { background: color-mix(in srgb, #ff4d6d 18%, transparent); color: var(--text); }
+.modal .feedback.info { background: var(--bg-2); color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+.modal footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--bg-2);
+}
+
+/* Auto-update toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-1); border: 1px solid var(--border);
+  padding: 10px 18px; border-radius: 999px;
+  box-shadow: var(--shadow); z-index: 2000; font-size: 13px; color: var(--text);
+  animation: toast-in .25s, toast-out .35s 4.6s forwards;
+  white-space: nowrap;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+
+/* Mobile */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; max-height: none; }
+  .header-inner { grid-template-columns: 1fr auto; }
+  .search-wrap { grid-column: 1 / -1; order: 3; max-width: none; }
+  .card.has-thumb { grid-template-columns: 1fr; }
+  .card.has-thumb .thumb { width: 100%; height: 180px; }
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body data-theme="dark">
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">🤖</div>
+      <div>
+        <div>AI News Hub</div>
+        <div class="sub">269 sources · foorilla/allainews</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input id="search" type="text" placeholder="Search titles, sources, descriptions…" autocomplete="off">
+    </div>
+    <div class="actions">
+      <button class="btn icon-only" id="theme-toggle" title="Toggle theme">🌗</button>
+      <button class="btn" id="add-feed-btn" title="Add a custom feed">+ Feed</button>
+      <button class="btn" id="refresh-btn" title="Force refresh all feeds (ignores cache)">↻ Refresh</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="timeline">📰 Timeline <span class="count" id="cnt-timeline">0</span></button>
+    <button class="tab" data-view="videos">🎬 Videos <span class="count" id="cnt-videos">0</span></button>
+    <button class="tab" data-view="podcasts">🎙️ Podcasts <span class="count" id="cnt-podcasts">0</span></button>
+    <button class="tab" data-view="sources">📚 Sources <span class="count" id="cnt-sources">0</span></button>
+  </nav>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="progress-card">
+      <div class="row"><span id="prog-label">Loading feeds…</span><span id="prog-num">0/0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="controls">
+        <button class="btn" id="pause-btn">⏸ Pause</button>
+        <button class="btn" id="loadall-btn">Load all</button>
+      </div>
+    </div>
+    <h3>Categories</h3>
+    <div class="filter-list" id="cat-list"></div>
+    <h3>Tags</h3>
+    <div class="filter-list" id="tag-list"></div>
+    <h3>Time</h3>
+    <div class="filter-list" id="time-list">
+      <div class="filter-item active" data-time="all"><div class="label-wrap"><span>Any time</span></div></div>
+      <div class="filter-item" data-time="24h"><div class="label-wrap"><span>Last 24 hours</span></div></div>
+      <div class="filter-item" data-time="week"><div class="label-wrap"><span>Last 7 days</span></div></div>
+      <div class="filter-item" data-time="month"><div class="label-wrap"><span>Last 30 days</span></div></div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="toolbar">
+      <div class="info" id="info">Initializing…</div>
+      <div class="sort">
+        <button class="chip active" data-sort="newest">↓ Newest</button>
+        <button class="chip" data-sort="oldest">↑ Oldest</button>
+      </div>
+    </div>
+    <div id="error-banner"></div>
+    <div id="view-timeline" class="timeline"></div>
+    <div id="view-videos" class="video-grid hidden"></div>
+    <div id="view-podcasts" class="timeline hidden"></div>
+    <div id="view-sources" class="sources-grid hidden"></div>
+    <div id="empty-state" class="state hidden">
+      <div class="icon">📭</div>
+      <div>No items match your filters yet.</div>
+    </div>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+
+<template id="add-feed-modal-tpl">
+  <div class="modal-backdrop">
+    <div class="modal" role="dialog" aria-labelledby="add-feed-title">
+      <header>
+        <h3 id="add-feed-title">Add a custom feed</h3>
+        <button class="close" data-close="1">×</button>
+      </header>
+      <div class="body">
+        <div class="feedback" id="modal-feedback" style="display:none"></div>
+        <div class="field">
+          <label>RSS / Atom feed URL <span style="color:#ff8da3">*</span></label>
+          <input type="url" id="feed-url" placeholder="https://example.com/feed.xml" autocomplete="off">
+          <div class="help">Paste any RSS or Atom URL — including YouTube channel feeds.</div>
+        </div>
+        <div class="field">
+          <label>Title (optional — auto-detected if empty)</label>
+          <input type="text" id="feed-title" placeholder="">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="feed-category">
+            <option value="News">News</option>
+            <option value="Podcasts">Podcasts</option>
+            <option value="Videos">Videos</option>
+            <option value="Jobs">Jobs</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tags (comma-separated, optional)</label>
+          <input type="text" id="feed-tags" placeholder="Newsletter, Lab/Vendor, …">
+        </div>
+      </div>
+      <footer>
+        <button class="btn" data-close="1">Cancel</button>
+        <button class="btn primary" id="feed-submit">Add feed</button>
+      </footer>
+    </div>
+  </div>
+</template>
+
+<script id="sources-data" type="application/json">[{"title":"404 Media","homepage":"https://www.404media.co/","feed":"https://www.404media.co/rss","description":"404 Media is a new independent media company founded by technology journalists Jason Koebler, Emanuel Maiberg, Samantha Cole, and Joseph","category":"News","tags":[],"youtube_channel_id":null},{"title":"Ahead of AI","homepage":"https://magazine.sebastianraschka.com","feed":"https://magazine.sebastianraschka.com/feed","description":"Ahead AI specializes in Machine Learning & AI research and is read by more than 42,000 researchers and practitioners (across","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI Accelerator Institute | Future of Artificial Intelligence","homepage":"https://www.aiacceleratorinstitute.com/","feed":"https://aiacceleratorinstitute.com/rss/","description":"Next Generation Machine Intelligence","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI Archives | KnowTechie","homepage":"https://knowtechie.com/category/ai/","feed":"https://knowtechie.com/category/ai/feed/","description":"Tech News, Reviews, and How-To's for the Non-Techie","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI Business","homepage":"https://aibusiness.com","feed":"https://aibusiness.com/rss.xml","description":"AI Business - informing, educating, and connecting the global AI community.","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI News","homepage":"https://www.artificialintelligence-news.com/","feed":"https://www.artificialintelligence-news.com/feed/rss/","description":"Artificial Intelligence News","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI News | VentureBeat","homepage":"https://venturebeat.com/category/ai/","feed":"https://venturebeat.com/category/ai/feed/","description":"Transformative tech coverage that matters","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI Now Institute","homepage":"https://ainowinstitute.org/category/news","feed":"https://ainowinstitute.org/category/news/feed","description":"The AI Now Institute produces diagnosis and actionable policy research on artificial intelligence.","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Ai Prompt Programming","homepage":"https://www.reddit.com/r/aipromptprogramming/","feed":"https://www.reddit.com/r/aipromptprogramming","description":"This group focuses on using AI tools like ChatGPT, OpenAI API, and other automated code generators for Ai programming &","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"AI Snake Oil","homepage":"https://aisnakeoil.substack.com","feed":"https://aisnakeoil.substack.com/feed","description":"What AI *can't* do","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"AI – AI-TechPark","homepage":"https://ai-techpark.com","feed":"https://ai-techpark.com/category/ai/feed/","description":"AI, ML, IoT, Cybersecurity News & Trend Analysis, Interviews","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI – SiliconANGLE","homepage":"https://siliconangle.com","feed":"https://siliconangle.com/category/ai/feed","description":"Extracting the signal from the noise.","category":"News","tags":[],"youtube_channel_id":null},{"title":"AI – Uber Engineering Blog","homepage":"https://www.uber.com/en-VN/blog/engineering/","feed":"https://eng.uber.com/category/articles/ai/feed","description":"Software engineering and technologies that set the world in motion","category":"News","tags":[],"youtube_channel_id":null},{"title":"AIModels.fyi","homepage":"https://aimodels.substack.com","feed":"https://aimodels.substack.com/feed","description":"Get a digest of new AI research, how-to guides, and top models.","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"Anaconda Blog","homepage":"https://www.anaconda.com/blog","feed":"https://www.anaconda.com/blog/feed","description":"The Data Science Blog","category":"News","tags":[],"youtube_channel_id":null},{"title":"Analytics India Magazine","homepage":"https://analyticsindiamag.com/","feed":"https://analyticsindiamag.com/feed/","description":"Artificial Intelligence, Emerging Tech, Data Science","category":"News","tags":[],"youtube_channel_id":null},{"title":"Announcements - Stability AI","homepage":"https://stability.ai/blog/","feed":"https://stability.ai/blog?format=rss","description":"Skip to content Open main navigation Close main navigation Contact us Contact us Page not found. Go Home facebook-f icon","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Ars Technica - All content","homepage":"https://arstechnica.com","feed":"https://feeds.arstechnica.com/arstechnica/index","description":"All Ars Technica stories","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial Intelligence","homepage":"https://www.reddit.com/r/artificial","feed":"https://www.reddit.com/r/artificial","description":"Reddit's home for Artificial Intelligence","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Artificial intelligence (AI) | The Guardian","homepage":"https://www.theguardian.com/technology/artificialintelligenceai","feed":"https://www.theguardian.com/technology/artificialintelligenceai/rss","description":"Latest news and features from theguardian.com, the world's leading liberal voice","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial intelligence (AI) – The Conversation","homepage":"https://theconversation.com","feed":"https://theconversation.com/europe/topics/artificial-intelligence-ai-90/articles.atom","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"artificial intelligence Archives - SpaceNews","homepage":"https://spacenews.com","feed":"https://spacenews.com/tag/artificial-intelligence/feed/","description":"Covering the business and politics of space","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial Intelligence Latest","homepage":"https://www.wired.com","feed":"https://www.wired.com/feed/tag/ai/latest/rss","description":"Channel Description","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial Intelligence News -- ScienceDaily","homepage":"https://www.sciencedaily.com/news/computers_math/artificial_intelligence/","feed":"https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml","description":"Artificial Intelligence News. Everything on AI including futuristic robots with artificial intelligence, computer models of human intelligence and more.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial Intelligence | TechRepublic","homepage":"https://www.techrepublic.com","feed":"https://www.techrepublic.com/rssfeeds/topic/artificial-intelligence/","description":"News, Tips, and Advice for Technology Professionals","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificial Intelligence – Futurism","homepage":"https://futurism.com","feed":"https://futurism.com/categories/ai-artificial-intelligence/feed","description":"Building the future together","category":"News","tags":[],"youtube_channel_id":null},{"title":"Artificialis - Medium","homepage":"https://medium.com/artificialis?source=rss----a81c8d170222---4","feed":"https://medium.com/feed/artificialis","description":"A home for Data Science and Machine Learning. Share ideas and concepts with us. - Medium","category":"News","tags":["Medium"],"youtube_channel_id":null},{"title":"Big Data – SiliconANGLE","homepage":"https://siliconangle.com","feed":"https://siliconangle.com/category/big-data/feed","description":"Extracting the signal from the noise.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog","homepage":"https://machinelearningmastery.com/blog/","feed":"https://machinelearningmastery.com/blog/feed","description":"Making developers awesome at machine learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog - neptune.ai","homepage":"https://neptune.ai/blog","feed":"https://neptune.ai/blog/feed","description":"ML metadata store: track experiments, register models, integrate with any MLOps tool stack.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog - PyImageSearch","homepage":"https://pyimagesearch.com/blog/","feed":"https://pyimagesearch.com/blog/feed","description":"You can master Computer Vision, Deep Learning, and OpenCV - PyImageSearch","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog Archives • David Stutz","homepage":"https://davidstutz.de/category/blog/","feed":"https://davidstutz.de/category/blog/feed","description":"Robust and trustworthy artificial intelligence and computer vision research and engineering","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog Content - TOGETHER","homepage":"https://www.together.xyz/blog/","feed":"https://www.together.xyz/blog?format=rss","description":"503 Service Unavailable Please visit status.squarespace.com for updates QzzEFXlV/oh6BcUmr @ Thu, 18 May 2023 19:41:35 GMT &amp;&amp;&gt;&amp;&amp;&lt;","category":"News","tags":[],"youtube_channel_id":null},{"title":"Blog on EleutherAI Blog","homepage":"https://blog.eleuther.ai/","feed":"https://blog.eleuther.ai/index.xml","description":"Recent content in Blog on EleutherAI Blog","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Bloomberg Technology","homepage":"https://bloomberg.com/technology/","feed":"https://feeds.bloomberg.com/technology/news.rss","description":"Bloomberg Technology","category":"News","tags":[],"youtube_channel_id":null},{"title":"Business Insider","homepage":"https://www.businessinsider.com","feed":"https://feeds.businessinsider.com/custom/all","description":"Content from Business Insider Excluding Premium","category":"News","tags":[],"youtube_channel_id":null},{"title":"Business Latest","homepage":"https://www.wired.com","feed":"https://www.wired.com/feed/category/business/latest/rss","description":"Channel Description","category":"News","tags":[],"youtube_channel_id":null},{"title":"Chain of Thought","homepage":"https://every.to/chain-of-thought","feed":"https://every.to/chain-of-thought/feed.xml","description":"Essays, interviews, and experiments at the forefront of AI.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Chip Huyen","homepage":"https://huyenchip.com","feed":"https://huyenchip.com/feed","description":"Chip Huyen is a writer and computer scientist. She works to bring the best engineering practices to machine learning production.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Computer Vision","homepage":"https://www.reddit.com/r/computervision","feed":"https://www.reddit.com/r/computervision","description":"Computer Vision is the scientific subfield of AI concerned with developing algorithms to extract meaningful information from raw images, videos,","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Computerworld","homepage":"https://www.computerworld.com","feed":"http://www.computerworld.com/index.rss","description":"The Voice of Business Technology.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Context by Cohere","homepage":"https://txt.cohere.ai/","feed":"https://txt.cohere.ai/rss/","description":"Bringing you the latest news from the Cohere platform","category":"News","tags":[],"youtube_channel_id":null},{"title":"Crunchbase News","homepage":"https://news.crunchbase.com/","feed":"https://news.crunchbase.com/feed","description":"Data-driven reporting on private markets, startups, founders, and investors","category":"News","tags":[],"youtube_channel_id":null},{"title":"cs.CL updates on arXiv.org","homepage":"http://arxiv.org/","feed":"https://arxiv.org/rss/cs.CL","description":"Computer Science -- Computation and Language (cs.CL) updates on the arXiv.org e-print archive","category":"News","tags":["Research"],"youtube_channel_id":null},{"title":"cs.CV updates on arXiv.org","homepage":"http://arxiv.org/","feed":"https://arxiv.org/rss/cs.CV","description":"Computer Science -- Computer Vision and Pattern Recognition (cs.CV) updates on the arXiv.org e-print archive","category":"News","tags":["Research"],"youtube_channel_id":null},{"title":"cs.LG updates on arXiv.org","homepage":"http://arxiv.org/","feed":"https://arxiv.org/rss/cs.LG","description":"Computer Science -- Machine Learning (cs.LG) updates on the arXiv.org e-print archive","category":"News","tags":["Research"],"youtube_channel_id":null},{"title":"DagsHub Blog","homepage":"https://dagshub.com/blog/","feed":"https://dagshub.com/blog/rss/","description":"Open Source Data Science, ML Workflows and MLOps","category":"News","tags":[],"youtube_channel_id":null},{"title":"Dark Reading","homepage":"https://www.darkreading.com","feed":"https://www.darkreading.com/rss.xml","description":"Dark Reading: Connecting the Information and Security Community","category":"News","tags":[],"youtube_channel_id":null},{"title":"Data Machina","homepage":"https://datamachina.substack.com","feed":"https://datamachina.substack.com/feed","description":"Keep up with the latest AI / ML research, projects & repos. A weekly deep dive into what's new in","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"Data Science","homepage":"https://www.reddit.com/r/datascience","feed":"https://www.reddit.com/r/datascience","description":"A place for data science practitioners and professionals to discuss and debate data science career questions.","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Databricks","homepage":"https://www.databricks.com","feed":"https://www.databricks.com/feed","description":"Making big data simple.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Datafloq","homepage":"https://datafloq.com/","feed":"https://datafloq.com/feed/?post_type=post","description":"Data and Technology Insights","category":"News","tags":[],"youtube_channel_id":null},{"title":"Datanami","homepage":"https://www.datanami.com/","feed":"https://www.datanami.com/feed/","description":"Data Science • AI • Advanced Analytics","category":"News","tags":[],"youtube_channel_id":null},{"title":"DebuggerCafe","homepage":"https://debuggercafe.com","feed":"https://debuggercafe.com/feed/","description":"Machine Learning and Deep Learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"Deep Learning","homepage":"https://www.reddit.com/r/deeplearning","feed":"https://www.reddit.com/r/deeplearning","description":"","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Deep Tech - Tech.eu","homepage":"https://tech.eu/category/deep-tech/","feed":"https://tech.eu/category/deep-tech/feed","description":"The premier source of European technology news, data, research, analysis and in-depth market intelligence.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Deephaven Blog","homepage":"https://deephaven.io/blog","feed":"https://deephaven.io/blog/rss.xml","description":"Deephaven Blog","category":"News","tags":[],"youtube_channel_id":null},{"title":"DeepMind Blog","homepage":"https://www.deepmind.com","feed":"https://deepmind.com/blog/feed/basic/","description":"Read the latest articles and stories from DeepMind and find out more about our latest breakthroughs in cutting-edge AI research.","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Department of Product","homepage":"https://departmentofproduct.substack.com","feed":"https://departmentofproduct.substack.com/feed","description":"Your ultimate guide to building a product-led tech company. News, analysis and knowledge for people who work in tech. Join","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"DEV Community","homepage":"https://dev.to","feed":"https://dev.to/feed","description":"The most recent home feed on DEV Community.","category":"News","tags":[],"youtube_channel_id":null},{"title":"EE Times","homepage":"https://www.eetimes.com/","feed":"https://www.eetimes.com/feed","description":"Connecting The Global Electronics Community","category":"News","tags":[],"youtube_channel_id":null},{"title":"Engadget","homepage":"https://www.engadget.com/","feed":"https://www.engadget.com/rss.xml","description":"Engadget is a web magazine with obsessive daily coverage of everything new in gadgets and consumer electronics","category":"News","tags":[],"youtube_channel_id":null},{"title":"Eugene Yan","homepage":"https://eugeneyan.com","feed":"https://eugeneyan.com/rss/","description":"Eugene Yan works at the intersection of consumer data & tech to build machine learning products, and writes about effective","category":"News","tags":[],"youtube_channel_id":null},{"title":"Explosion","homepage":"https://explosion.ai","feed":"https://explosion.ai/feed","description":"Explosion is a software company specializing in developer tools for Artificial Intelligence and Natural Language Processing. We’re the makers of","category":"News","tags":[],"youtube_channel_id":null},{"title":"Freethink","homepage":"https://www.freethink.com/","feed":"https://www.freethink.com/feed/all","description":"At Freethink, we believe the daily news should inspire people to build a better world. While most media is fueled","category":"News","tags":[],"youtube_channel_id":null},{"title":"Generational","homepage":"https://www.generational.pub","feed":"https://www.generational.pub/feed","description":"Essays and briefings about the most consequential AI trends and companies. Read by >1,000 leading investors and operators.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Get AI Insights For Your Organization From Forrester","homepage":"https://www.forrester.com/blogs/category/artificial-intelligence-ai/","feed":"https://www.forrester.com/blogs/category/artificial-intelligence-ai/feed","description":"502 Bad Gateway","category":"News","tags":[],"youtube_channel_id":null},{"title":"gHacks Technology News","homepage":"https://www.ghacks.net","feed":"https://www.ghacks.net/feed/","description":"The independent technology news blog","category":"News","tags":[],"youtube_channel_id":null},{"title":"Gizmodo","homepage":"https://gizmodo.com","feed":"https://gizmodo.com/rss","description":"The Future Is Here","category":"News","tags":[],"youtube_channel_id":null},{"title":"Global News","homepage":"https://globalnews.ca","feed":"https://globalnews.ca/tag/artificial-intelligence/feed","description":"429 Too Many Requests nginx","category":"News","tags":[],"youtube_channel_id":null},{"title":"Google AI Blog","homepage":"http://ai.googleblog.com/","feed":"http://googleaiblog.blogspot.com/atom.xml","description":"The latest news from Google AI.","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Gradient Flow","homepage":"https://gradientflow.com/","feed":"https://gradientflow.com/feed/","description":"Unlocking Data and AI","category":"News","tags":[],"youtube_channel_id":null},{"title":"Hacker Noon - ai","homepage":"https://hackernoon.com/tagged/ai","feed":"https://hackernoon.com/tagged/ai/feed","description":"Humans with irrational brains writing about machines with rational brains.","category":"News","tags":[],"youtube_channel_id":null},{"title":"HealthTech Magazine","homepage":"https://healthtechmagazine.net/","feed":"https://feeds.feedburner.com/HealthTechMagazine","description":"To continue, please type the characters below: About this page Our systems have detected unusual traffic from your computer network.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Hugging Face - Blog","homepage":"https://huggingface.co/blog","feed":"https://huggingface.co/blog/feed.xml","description":"The Hugging Face blog","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"IEEE Spectrum","homepage":"https://spectrum.ieee.org/","feed":"https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss","description":"IEEE Spectrum","category":"News","tags":[],"youtube_channel_id":null},{"title":"InfoQ - AI, ML & Data Engineering","homepage":"https://www.infoq.com","feed":"https://feed.infoq.com/ai-ml-data-eng/","description":"InfoQ AI, ML & Data Engineering feed","category":"News","tags":[],"youtube_channel_id":null},{"title":"InfoWorld Analytics","homepage":"https://www.infoworld.com","feed":"https://www.infoworld.com/category/analytics/index.rss","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"InfoWorld Machine Learning","homepage":"https://www.infoworld.com","feed":"https://www.infoworld.com/category/machine-learning/index.rss","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"insideBIGDATA","homepage":"https://insidebigdata.com/","feed":"https://insidebigdata.com/feed","description":"insideBIGDATA: Clear, Concise Insights on Big Data Strategies","category":"News","tags":[],"youtube_channel_id":null},{"title":"Interconnects","homepage":"https://www.interconnects.ai","feed":"https://www.interconnects.ai/feed","description":"Linking important ideas of AI. The border between high-level and technical thinking. Read by leading engineers and researchers on Wednesday","category":"News","tags":[],"youtube_channel_id":null},{"title":"International Business Times","homepage":"https://www.ibtimes.com","feed":"https://www.ibtimes.com/rss","description":"Latest News","category":"News","tags":[],"youtube_channel_id":null},{"title":"JMLR","homepage":"http://www.jmlr.org","feed":"https://www.jmlr.org/jmlr.xml","description":"Journal of Machine Learning Research","category":"News","tags":[],"youtube_channel_id":null},{"title":"KDnuggets","homepage":"https://www.kdnuggets.com","feed":"https://www.kdnuggets.com/feed","description":"Data Science, Machine Learning, AI & Analytics","category":"News","tags":[],"youtube_channel_id":null},{"title":"LangChain","homepage":"https://blog.langchain.dev/","feed":"https://blog.langchain.dev/rss/","description":"The official LangChain blog.","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Last Week in AI","homepage":"https://lastweekin.ai","feed":"https://lastweekin.ai/feed","description":"Weekly text and audio summaries of the most interesting AI news, as well as editorials commenting on recent events","category":"News","tags":[],"youtube_channel_id":null},{"title":"Latent Space","homepage":"https://www.latent.space","feed":"https://www.latent.space/feed","description":"Productized AI/ML, Software 3.0, and other notes from Latent Space","category":"News","tags":[],"youtube_channel_id":null},{"title":"Latest from Sifted","homepage":"https://sifted.eu/latest/","feed":"https://sifted.eu/feed/?post_type=article","description":"Quality journalism about Europe's New Economy","category":"News","tags":[],"youtube_channel_id":null},{"title":"Latest stories for ZDNET in Artificial-Intelligence","homepage":"https://www.zdnet.com/","feed":"https://www.zdnet.com/topic/artificial-intelligence/rss.xml","description":"Latest stories for ZDNET in Artificial-Intelligence","category":"News","tags":[],"youtube_channel_id":null},{"title":"Latest stories for ZDNET in Big-Data","homepage":"https://www.zdnet.com/","feed":"https://www.zdnet.com/topic/big-data/rss.xml","description":"Latest stories for ZDNET in Big-Data","category":"News","tags":[],"youtube_channel_id":null},{"title":"Lightning AI","homepage":"https://lightning.ai/pages/","feed":"https://lightning.ai/pages/feed/","description":"The platform for teams to build AI.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Machine Learning","homepage":"https://www.reddit.com/r/MachineLearning","feed":"https://www.reddit.com/r/MachineLearning","description":"","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Machine Learning & Big Data Blog – BMC Software | Blogs","homepage":"https://s7280.pcdn.co","feed":"https://www.bmc.com/blogs/categories/machine-learning-big-data/feed","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"Machine learning : nature.com subject feeds","homepage":"https://www.nature.com/subjects/machine-learning","feed":"https://www.nature.com/subjects/machine-learning.rss","description":"Latest news and research from Nature.com on the topic of Machine learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"Machine Learning Blog | ML@CMU | Carnegie Mellon University","homepage":"https://blog.ml.cmu.edu","feed":"https://blog.ml.cmu.edu/feed","description":"Request Timeout This request takes too long to process, it is timed out by the server. If it should not","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"machinelearningnews","homepage":"https://www.reddit.com/r/machinelearningnews","feed":"https://www.reddit.com/r/machinelearningnews","description":"We are a community of machine learning enthusiasts/researchers/journalists/writers who share interesting news and articles about the applications of AI. You","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"MarkTechPost","homepage":"https://www.marktechpost.com/","feed":"https://www.marktechpost.com/feed","description":"An Artificial Intelligence News Platform","category":"News","tags":[],"youtube_channel_id":null},{"title":"Microsoft Research","homepage":"https://www.microsoft.com/en-us/research/","feed":"https://www.microsoft.com/en-us/research/feed/","description":"502 Bad Gateway nginx","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Mila","homepage":"https://mila.quebec/en/","feed":"https://mila.quebec/en/feed/","description":"Dedicated to understanding the fundamentals of learning and intelligence","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"MIT News - Machine learning","homepage":"https://news.mit.edu/topic/mitmachine-learning-rss.xml","feed":"https://news.mit.edu/topic/mitmachine-learning-rss.xml","description":"MIT news feed about: Machine learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"MIT Technology Review","homepage":"https://www.technologyreview.com","feed":"https://www.technologyreview.com/feed/","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"Mozilla Foundation Blog","homepage":"https://foundation.mozilla.org/blog/","feed":"https://foundation.mozilla.org/en/blog/rss/","description":"The Mozilla Foundation Blog","category":"News","tags":[],"youtube_channel_id":null},{"title":"Natural Language Processing","homepage":"https://www.reddit.com/r/LanguageTechnology","feed":"https://www.reddit.com/r/LanguageTechnology","description":"Natural language processing (NLP) is a field of computer science, artificial intelligence and computational linguistics concerned with the interactions between","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"Neural Interfaces News -- ScienceDaily","homepage":"https://www.sciencedaily.com/news/computers_math/neural_interfaces/","feed":"https://www.sciencedaily.com/rss/computers_math/neural_interfaces.xml","description":"Read amazing research on neural interfaces, brain-controlled robotic devices, microchips that mimic the brain and more.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Neural Networks, Deep Learning and Machine Learning","homepage":"https://www.reddit.com/r/neuralnetworks","feed":"https://www.reddit.com/r/neuralnetworks","description":"Subreddit about Artificial Neural Networks, Deep Learning and Machine Learning.","category":"News","tags":["Reddit"],"youtube_channel_id":null},{"title":"New Scientist - Technology","homepage":"https://www.newscientist.com/","feed":"https://www.newscientist.com/subject/technology/feed/","description":"New Scientist - Technology","category":"News","tags":[],"youtube_channel_id":null},{"title":"News on Artificial Intelligence and Machine Learning","homepage":"https://techxplore.com/machine-learning-ai-news/","feed":"https://phys.org/rss-feed/technology-news/machine-learning-ai/","description":"The latest news on Artificial Intelligence and Machine Learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"News on Artificial Intelligence and Machine Learning","homepage":"https://techxplore.com/machine-learning-ai-news/","feed":"https://techxplore.com/rss-feed/machine-learning-ai-news/","description":"The latest news on Artificial Intelligence and Machine Learning","category":"News","tags":[],"youtube_channel_id":null},{"title":"News, Tutorials, AI Research","homepage":"https://www.assemblyai.com/blog/","feed":"https://www.assemblyai.com/blog/rss/","description":"Stay up to date with product news, company news, the latest AI research, and AssemblyAI tutorials.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Nicholas Carlini","homepage":"https://nicholas.carlini.com/","feed":"https://nicholas.carlini.com/writing/feed.xml","description":"Nicholas writes things.","category":"News","tags":[],"youtube_channel_id":null},{"title":"NVIDIA Technical Blog","homepage":"https://developer.nvidia.com/blog","feed":"https://developer.nvidia.com/blog/feed","description":"News and tutorials for developers, data scientists, and IT admins","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"NYT > Technology","homepage":"https://www.nytimes.com/section/technology","feed":"https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml","description":"Technology industry news, commentary and analysis, with reporting on big tech, startups, and internet culture.","category":"News","tags":[],"youtube_channel_id":null},{"title":"One Useful Thing","homepage":"https://www.oneusefulthing.org","feed":"https://www.oneusefulthing.org/feed","description":"Translating academic research into mostly useful insights, with some ephemera on the side. Mostly AI stuff recently. By Prof. Ethan","category":"News","tags":[],"youtube_channel_id":null},{"title":"OpenAI Blog","homepage":"https://openai.com/blog","feed":"https://openai.com/blog/rss/","description":"The OpenAI blog","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"Paperspace Blog","homepage":"https://blog.paperspace.com/","feed":"https://blog.paperspace.com/rss/","description":"Tutorials, sample apps, and more created by the Paperspace internal research team and community","category":"News","tags":[],"youtube_channel_id":null},{"title":"PetaPixel","homepage":"https://petapixel.com/","feed":"https://petapixel.com/feed","description":"Photography and Camera News, Reviews, and Inspiration","category":"News","tags":[],"youtube_channel_id":null},{"title":"philschmid blog","homepage":"https://www.philschmid.de","feed":"https://www.philschmid.de/feed.xml","description":"Hello, my name is Philipp. I write about machine learning and cloud with. You will find tutorials and explanations about","category":"News","tags":[],"youtube_channel_id":null},{"title":"Playing with AI","homepage":"https://erichartford.com","feed":"https://erichartford.com/rss.xml","description":"Playing with AI","category":"News","tags":[],"youtube_channel_id":null},{"title":"Posts on Max Woolf's Blog","homepage":"https://minimaxir.com/post/","feed":"https://minimaxir.com/post/index.xml","description":"Recent content in Posts on Max Woolf's Blog","category":"News","tags":[],"youtube_channel_id":null},{"title":"Product Hunt — The best new products, every day","homepage":"https://www.producthunt.com","feed":"https://www.producthunt.com/feed","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"Python Insider","homepage":"https://pythoninsider.blogspot.com/","feed":"https://feeds.feedburner.com/PythonInsider","description":"Python core development news and information.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Quanta Magazine","homepage":"https://www.quantamagazine.org","feed":"https://api.quantamagazine.org/feed","description":"Illuminating science","category":"News","tags":[],"youtube_channel_id":null},{"title":"R-bloggers","homepage":"https://www.r-bloggers.com","feed":"https://feeds.feedburner.com/RBloggers","description":"R news and tutorials contributed by hundreds of R bloggers","category":"News","tags":[],"youtube_channel_id":null},{"title":"Radix - Medium","homepage":"https://medium.com/radix-ai-blog?source=rss----74b5b476362b---4","feed":"https://medium.com/feed/radix-ai-blog","description":"Superpowering people with Artificial Intelligence - Medium","category":"News","tags":["Medium"],"youtube_channel_id":null},{"title":"Replicate Blog","homepage":"https://replicate.com/blog","feed":"https://replicate.com/blog/rss","description":"Machine learnings from the Replicate team","category":"News","tags":[],"youtube_channel_id":null},{"title":"Replicate Codex","homepage":"https://notes.replicatecodex.com/","feed":"https://notes.replicatecodex.com/rss/","description":"Replicate Codex is the most comprehensive resource for exploring and discovering AI models available on Replicate. Search, filter, and sort","category":"News","tags":[],"youtube_channel_id":null},{"title":"Rest of World - Latest Stories","homepage":"https://restofworld.org","feed":"https://restofworld.org/feed/latest","description":"A continuous stream of the latest articles published from Rest of World","category":"News","tags":[],"youtube_channel_id":null},{"title":"Robotics - Tech.eu","homepage":"https://tech.eu/category/robotics/","feed":"https://tech.eu/category/robotics/feed","description":"The premier source of European technology news, data, research, analysis and in-depth market intelligence.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Robotics Research News -- ScienceDaily","homepage":"https://www.sciencedaily.com/news/computers_math/robotics/","feed":"https://www.sciencedaily.com/rss/computers_math/robotics.xml","description":"Robots and Artificial Intelligence. From babybots to surprisingly accomplished robots, read all the latest news and research in robotics here.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Scientific American Content: Global","homepage":"http://www.scientificamerican.com","feed":"http://rss.sciam.com/ScientificAmerican-Global","description":"Science news and technology updates from Scientific American","category":"News","tags":[],"youtube_channel_id":null},{"title":"SemiAnalysis","homepage":"https://www.semianalysis.com","feed":"https://www.semianalysis.com/feed","description":"Bridging the gap between the world's most important industry, semiconductors, and business.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Silicon RepublicSilicon Republic","homepage":"https://www.siliconrepublic.com","feed":"https://www.siliconrepublic.com/feed","description":"Silicon Republic is a leading source for technology, science and start-up news, information and resources for people who are passionate","category":"News","tags":[],"youtube_channel_id":null},{"title":"Simon Willison's Weblog","homepage":"http://simonwillison.net/","feed":"https://simonwillison.net/atom/everything/","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"Stack Overflow Blog","homepage":"https://stackoverflow.blog/","feed":"https://stackoverflow.blog/feed/","description":"Essays, opinions, and advice on the act of computer programming from Stack Overflow.","category":"News","tags":[],"youtube_channel_id":null},{"title":"stanford-crfm-website.github.io","homepage":"https://crfm.stanford.edu/blog.html","feed":"https://crfm.stanford.edu/feed","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"stat.ML updates on arXiv.org","homepage":"http://arxiv.org/","feed":"https://arxiv.org/rss/stat.ML","description":"Statistics -- Machine Learning (stat.ML) updates on the arXiv.org e-print archive","category":"News","tags":["Research"],"youtube_channel_id":null},{"title":"Stories by Netflix Technology Blog on Medium","homepage":"https://medium.com/@netflixtechblog?source=rss-c3aeaf49d8a4------2","feed":"https://medium.com/feed/@netflixtechblog","description":"Stories by Netflix Technology Blog on Medium","category":"News","tags":["Medium"],"youtube_channel_id":null},{"title":"Stories by ODSC - Open Data Science on Medium","homepage":"https://medium.com/@odsc?source=rss-2b9d62538208------2","feed":"https://medium.com/feed/@odsc","description":"Stories by ODSC - Open Data Science on Medium","category":"News","tags":["Medium"],"youtube_channel_id":null},{"title":"Synced","homepage":"https://syncedreview.com","feed":"https://syncedreview.com/feed","description":"AI Technology & Industry Review","category":"News","tags":[],"youtube_channel_id":null},{"title":"Synthedia","homepage":"https://synthedia.substack.com","feed":"https://synthedia.substack.com/feed","description":"Synthetic Media - Generative AI, Large Language Models, ChatGPT, DALL-E, Stable Diffusion, virtual humans / digital people, voice clones, deepfakes,","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"Tech Monitor","homepage":"https://techmonitor.ai","feed":"https://techmonitor.ai/feed","description":"Navigating the horizon of business technology​.","category":"News","tags":[],"youtube_channel_id":null},{"title":"TechCrunch","homepage":"https://techcrunch.com/","feed":"https://techcrunch.com/feed/","description":"Startup and Technology News","category":"News","tags":[],"youtube_channel_id":null},{"title":"Techmeme","homepage":"http://www.techmeme.com/","feed":"https://www.techmeme.com/feed.xml","description":"Tech Web, page A1","category":"News","tags":[],"youtube_channel_id":null},{"title":"Technology Archives - Reuters News Agency","homepage":"https://www.reutersagency.com/en/","feed":"https://www.reutersagency.com/feed/?best-topics=tech","description":"We tell all sides, but take none. We go back to the start, where there’s no bias and no agenda","category":"News","tags":[],"youtube_channel_id":null},{"title":"TechSpot","homepage":"https://www.techspot.com","feed":"https://www.techspot.com/backend.xml","description":"TechSpot News - All Stories","category":"News","tags":[],"youtube_channel_id":null},{"title":"TechTalks","homepage":"https://bdtechtalks.com","feed":"https://bdtechtalks.com/feed/","description":"Technology solving problems... and creating new ones","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Algorithmic Bridge","homepage":"https://thealgorithmicbridge.substack.com","feed":"https://thealgorithmicbridge.substack.com/feed","description":"Bridging the gap between AI and people. Join 13,000 others, including professionals from the Big Five: Google, Amazon, Microsoft, Meta,","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"The Berkeley Artificial Intelligence Research Blog","homepage":"http://bair.berkeley.edu/blog/","feed":"https://bair.berkeley.edu/blog/feed.xml","description":"The BAIR Blog","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"THE DECODER","homepage":"https://the-decoder.com/","feed":"https://the-decoder.com/feed/","description":"Artificial Intelligence: News, Business, Research","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Gradient","homepage":"https://thegradient.pub/","feed":"https://thegradient.pub/rss/","description":"A digital publication about artificial intelligence and the future.","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Information","homepage":"https://www.theinformation.com","feed":"https://www.theinformation.com/feed","description":"The Information has a simple mission: deliver important, deeply reported stories about the technology business you won’t find elsewhere. Many","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Intrinsic Perspective","homepage":"https://www.theintrinsicperspective.com","feed":"https://www.theintrinsicperspective.com/feed/","description":"Bridging the two cultures of science and the humanities","category":"News","tags":[],"youtube_channel_id":null},{"title":"The New Stack","homepage":"https://thenewstack.io/","feed":"https://thenewstack.io/feed","description":"The New Stack is a media platform for the people who build and manage software the world relies on. We","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Next Web","homepage":"https://thenextweb.com","feed":"https://thenextweb.com/neural/feed","description":"Original and proudly opinionated perspectives for Generation T","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Register - Software: AI + ML","homepage":"https://www.theregister.com/software/ai_ml/","feed":"https://www.theregister.com/software/ai_ml/headlines.atom","description":"Biting the hand that feeds IT — Enterprise Technology News and Analysis","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Rundown AI","homepage":"https://www.therundown.ai/","feed":"https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml","description":"Get the rundown on the latest developments in AI before everyone else.","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Stack","homepage":"https://www.thestack.technology/","feed":"https://www.thestack.technology/latest/rss/","description":"Interviews, Insight, Intelligence for Digital Leaders","category":"News","tags":[],"youtube_channel_id":null},{"title":"The TensorFlow Blog","homepage":"https://blog.tensorflow.org/","feed":"https://blog.tensorflow.org/feeds/posts/default?alt=rss","description":"The official TensorFlow blog.","category":"News","tags":["Lab/Vendor"],"youtube_channel_id":null},{"title":"The TRADE","homepage":"https://www.thetradenews.com/","feed":"https://www.thetradenews.com/feed/","description":"The leading news-based website for buy-side traders and hedge funds","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Verge -  All Posts","homepage":"https://www.theverge.com/","feed":"https://www.theverge.com/rss/index.xml","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"The Voicebot Podcast","homepage":"https://voicebot.ai/voicebot-podcasts/","feed":"http://feeds.libsyn.com/102459/rss","description":"The Voicebot Podcast is about the intersection of voice and artificial intelligence (AI) technologies. It is a weekly look at","category":"News","tags":[],"youtube_channel_id":null},{"title":"TheSequence","homepage":"https://thesequence.substack.com","feed":"https://thesequence.substack.com/feed","description":"The best source to stay up-to-date with the developments in the machine learning, artificial intelligence, and data science world. Trusted","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"Towards AI - Medium","homepage":"https://pub.towardsai.net?source=rss----98111c9905da---4","feed":"https://pub.towardsai.net/feed","description":"The leading AI community and content platform focused on making AI accessible to all - Medium","category":"News","tags":[],"youtube_channel_id":null},{"title":"Towards Data Science - Medium","homepage":"https://towardsdatascience.com?source=rss----7f60cf5620c9---4","feed":"https://towardsdatascience.com/feed","description":"Your home for data science. A Medium publication sharing concepts, ideas and codes. - Medium","category":"News","tags":[],"youtube_channel_id":null},{"title":"Unite.AI","homepage":"https://www.unite.ai/","feed":"https://www.unite.ai/feed/","description":"- AI News","category":"News","tags":[],"youtube_channel_id":null},{"title":"Unwind AI","homepage":"https://unwindai.substack.com","feed":"https://unwindai.substack.com/feed","description":"Your weekly newsletter on what's trending in the AI - from the field to your inbox! Read by over 5000+","category":"News","tags":["Newsletter"],"youtube_channel_id":null},{"title":"VICE US - AI","homepage":"https://www.vice.com/en/topic/ai","feed":"https://www.vice.com/en/rss/topic/ai","description":"RSS feed for https://www.vice.com/en/topic/ai","category":"News","tags":[],"youtube_channel_id":null},{"title":"Visual Studio Magazine","homepage":"https://visualstudiomagazine.com/","feed":"https://visualstudiomagazine.com/rss-feeds/news.aspx","description":"The Independent Voice for Microsoft Developers.","category":"News","tags":[],"youtube_channel_id":null},{"title":"Voicebot.ai","homepage":"https://voicebot.ai","feed":"https://voicebot.ai/feed/","description":"Giving Voice to a Revolution","category":"News","tags":[],"youtube_channel_id":null},{"title":"Weights & Biases: Fully Connected","homepage":"https://wandb.ai/fully-connected","feed":"https://wandb.ai/fully-connected/rss.xml","description":"Fully Connected is your home for curated tutorials, conversations with industry leaders, deep dives into the newest ML research, and","category":"News","tags":[],"youtube_channel_id":null},{"title":"Windows Blog","homepage":"https://blogs.windows.com/","feed":"https://blogs.windows.com/feed","description":"","category":"News","tags":[],"youtube_channel_id":null},{"title":"Wolfram Blog","homepage":"https://blog.wolfram.com","feed":"https://blog.wolfram.com/feed/","description":"News, Views and Insights from Wolfram","category":"News","tags":[],"youtube_channel_id":null},{"title":"ΑΙhub","homepage":"https://aihub.org","feed":"https://aihub.org/feed?cat=-473","description":"Connecting the AI community and the world. - Association for the Understanding of Artificial Intelligence","category":"News","tags":[],"youtube_channel_id":null},{"title":"Adventures in Machine Learning","homepage":"https://redcircle.com/shows/adventures-in-machine-learning","feed":"https://topenddevs.com/podcasts/adventures-in-machine-learning/rss.rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"AI in Financial Services Podcast","homepage":"http://aiinbanking.libsyn.com/website","feed":"https://aiandbanking.libsyn.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"AI Today Podcast: Artificial Intelligence Insights, Experts, and Opinion","homepage":"https://www.aidatatoday.com/","feed":"https://feeds.blubrry.com/feeds/aitoday.xml","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Babbage from The Economist","homepage":"https://www.economist.com/","feed":"https://feeds.acast.com/public/shows/e421d786-ec36-4148-aa99-7a3b2928a779","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Data Engineering Podcast","homepage":"https://www.dataengineeringpodcast.com","feed":"https://www.dataengineeringpodcast.com/feed/mp3/","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Data Science at Home","homepage":"https://datascienceathome.podbean.com","feed":"https://datascienceathome.com/feed.xml","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Data Skeptic","homepage":"https://dataskeptic.com","feed":"https://dataskeptic.libsyn.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Data Stories","homepage":"https://datastori.es","feed":"https://datastori.es/feed/","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"DataTalks.Club","homepage":"https://datatalks.club","feed":"https://anchor.fm/s/41286f68/podcast/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Episodes - The ChatGPT Report","homepage":"https://www.thechatgptreport.com/episodes/","feed":"https://www.thechatgptreport.com/episodes?format=rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Eye On A.I.","homepage":"http://www.eye-on.ai","feed":"https://aneyeonai.libsyn.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Geomob","homepage":"https://thegeomob.com/podcast","feed":"https://geomob-podcast.castos.com/feed","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Global AI - The Podcast","homepage":"https://podcasters.spotify.com/pod/show/global-ai-podcast","feed":"https://anchor.fm/s/443868ac/podcast/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Gradient Dissent: Exploring Machine Learning, AI, Deep Learning, Computer Vision","homepage":"http://wandb.com/podcast","feed":"https://feeds.captivate.fm/gradient-dissent/","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Harvard Data Science Review Podcast","homepage":"https://HDSR.podbean.com","feed":"https://feed.podbean.com/hdsr/feed.xml","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"MLOps.community","homepage":"https://mlops.community/","feed":"https://anchor.fm/s/174cb1b8/podcast/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"NLP Highlights","homepage":"http://allenai.org","feed":"http://feeds.soundcloud.com/users/soundcloud:users:306749289/sounds.rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Not So Standard Deviations","homepage":"http://nssdeviations.com","feed":"http://nssdeviations.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Postgres FM","homepage":"https://postgres.fm/","feed":"https://feeds.transistor.fm/postgres-fm","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Practical AI: Machine Learning, Data Science","homepage":"https://changelog.com/practicalai","feed":"https://changelog.com/practicalai/feed","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Small Data Forum Podcast","homepage":"http://lexisnexisbis.libsyn.com/podcast","feed":"http://lexisnexisbis.libsyn.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Talk Python To Me","homepage":"https://talkpython.fm/","feed":"https://talkpython.fm/episodes/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The AI Breakdown: Daily Artificial Intelligence News and Discussions","homepage":"https://sites.libsyn.com/468519","feed":"https://feeds.libsyn.com/468519/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The AI in Business Podcast","homepage":"http://podcast.emerj.com/aiinbusiness","feed":"http://podcast.emerj.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The AI Podcast","homepage":"https://blogs.nvidia.com/ai-podcast/","feed":"http://feeds.soundcloud.com/users/soundcloud:users:264034133/sounds.rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Artificial Intelligence Podcast","homepage":"https://linktr.ee/tonyphoang","feed":"https://anchor.fm/s/3952c6f8/podcast/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Artists of Data Science","homepage":"http://www.theartistsofdatascience.com","feed":"https://feeds.fireside.fm/theartistsofdatascience/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Data Engineering Show","homepage":"https://feeds.transistor.fm/the-data-engineering-show","feed":"https://feeds.transistor.fm/the-data-engineering-show","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Data Exchange","homepage":"https://thedataexchange.media","feed":"https://thedataexchange.media/feed/","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Gradient Podcast","homepage":"https://thegradientpub.substack.com/s/podcast","feed":"https://api.substack.com/feed/podcast/265424/s/1354.rss","description":"","category":"Podcasts","tags":["Newsletter"],"youtube_channel_id":null},{"title":"The Machine Learning Podcast","homepage":"https://www.themachinelearningpodcast.com","feed":"https://www.themachinelearningpodcast.com/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The Marketing AI Show","homepage":"https://www.marketingaiinstitute.com/","feed":"https://feeds.megaphone.fm/marketingai","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"The TWIML AI Podcast (formerly This Week in Machine Learning & Artificial Intelligence)","homepage":"https://twimlai.com","feed":"https://twimlai.com/feed","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"This Day in AI Podcast","homepage":"https://www.thisdayinai.com","feed":"https://feeds.transistor.fm/this-day-in-ai","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"Utilizing Tech Season 5: Utilizing Edge","homepage":"https://www.utilizingtech.com","feed":"https://anchor.fm/s/32ec7408/podcast/rss","description":"","category":"Podcasts","tags":[],"youtube_channel_id":null},{"title":"1littlecoder","homepage":"https://www.youtube.com/channel/UCpV_X0VrL8-jg3t6wYGS-1g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCpV_X0VrL8-jg3t6wYGS-1g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCpV_X0VrL8-jg3t6wYGS-1g"},{"title":"Abhishek Thakur","homepage":"https://www.youtube.com/channel/UCBPRJjIWfyNG4X-CRbnv78A","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCBPRJjIWfyNG4X-CRbnv78A","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCBPRJjIWfyNG4X-CRbnv78A"},{"title":"AI Coffee Break with Letitia","homepage":"https://www.youtube.com/channel/UCobqgqE4i5Kf7wrxRxhToQA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCobqgqE4i5Kf7wrxRxhToQA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCobqgqE4i5Kf7wrxRxhToQA"},{"title":"AI Explained","homepage":"https://www.youtube.com/channel/UCNJ1Ymd5yFuUPtn21xtRbbw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCNJ1Ymd5yFuUPtn21xtRbbw"},{"title":"AI Jason","homepage":"https://www.youtube.com/channel/UCrXSVX9a1mj8l0CMLwKgMVw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCrXSVX9a1mj8l0CMLwKgMVw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCrXSVX9a1mj8l0CMLwKgMVw"},{"title":"Aitrepreneur","homepage":"https://www.youtube.com/channel/UCEAbqW0HFB_UxZoUDO0kJBw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCEAbqW0HFB_UxZoUDO0kJBw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCEAbqW0HFB_UxZoUDO0kJBw"},{"title":"Aleksa Gordić - The AI Epiphany","homepage":"https://www.youtube.com/channel/UCj8shE7aIn4Yawwbo2FceCQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCj8shE7aIn4Yawwbo2FceCQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCj8shE7aIn4Yawwbo2FceCQ"},{"title":"Alex The Analyst","homepage":"https://www.youtube.com/channel/UC7cs8q-gJRlGwj4A8OmCmXg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC7cs8q-gJRlGwj4A8OmCmXg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC7cs8q-gJRlGwj4A8OmCmXg"},{"title":"All About AI","homepage":"https://www.youtube.com/channel/UCR9j1jqqB5Rse69wjUnbYwA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCR9j1jqqB5Rse69wjUnbYwA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCR9j1jqqB5Rse69wjUnbYwA"},{"title":"Allen Institute for AI","homepage":"https://www.youtube.com/channel/UCEqgmyWChwvt6MFGGlmUQCQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCEqgmyWChwvt6MFGGlmUQCQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCEqgmyWChwvt6MFGGlmUQCQ"},{"title":"Analytics India Magazine","homepage":"https://www.youtube.com/channel/UCAlwrsgeJavG1vw9qSFOUmA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCAlwrsgeJavG1vw9qSFOUmA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCAlwrsgeJavG1vw9qSFOUmA"},{"title":"Anastasi In Tech","homepage":"https://www.youtube.com/channel/UCORX3Cl7ByidjEgzSCgv9Yw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCORX3Cl7ByidjEgzSCgv9Yw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCORX3Cl7ByidjEgzSCgv9Yw"},{"title":"Andrej Baranovskij","homepage":"https://www.youtube.com/channel/UCqSX0Z20QCEE7tZKaQ4pS3Q","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCqSX0Z20QCEE7tZKaQ4pS3Q","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCqSX0Z20QCEE7tZKaQ4pS3Q"},{"title":"AssemblyAI","homepage":"https://www.youtube.com/channel/UCtatfZMf-8EkIwASXM4ts0A","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCtatfZMf-8EkIwASXM4ts0A","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCtatfZMf-8EkIwASXM4ts0A"},{"title":"Avra","homepage":"https://www.youtube.com/channel/UCDMP6ATYKNXMvn2ok1gfM7Q","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCDMP6ATYKNXMvn2ok1gfM7Q","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCDMP6ATYKNXMvn2ok1gfM7Q"},{"title":"code_your_own_AI","homepage":"https://www.youtube.com/channel/UCfOvNb3xj28SNqPQ_JIbumg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCfOvNb3xj28SNqPQ_JIbumg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCfOvNb3xj28SNqPQ_JIbumg"},{"title":"Data Independent","homepage":"https://www.youtube.com/channel/UCyR2Ct3pDOeZSRyZH5hPO-Q","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCyR2Ct3pDOeZSRyZH5hPO-Q","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCyR2Ct3pDOeZSRyZH5hPO-Q"},{"title":"David Shapiro ~ AI","homepage":"https://www.youtube.com/channel/UCvKRFNawVcuz4b9ihUTApCg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCvKRFNawVcuz4b9ihUTApCg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCvKRFNawVcuz4b9ihUTApCg"},{"title":"DeepMind","homepage":"https://www.youtube.com/channel/UCP7jMXSY2xbc3KCAE0MHQ-A","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCP7jMXSY2xbc3KCAE0MHQ-A"},{"title":"Edan Meyer","homepage":"https://www.youtube.com/channel/UC66Ggxy8MHX9DCDohdRYDTA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC66Ggxy8MHX9DCDohdRYDTA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC66Ggxy8MHX9DCDohdRYDTA"},{"title":"Full Stack Deep Learning","homepage":"https://www.youtube.com/channel/UCVchfoB65aVtQiDITbGq2LQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCVchfoB65aVtQiDITbGq2LQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCVchfoB65aVtQiDITbGq2LQ"},{"title":"H2O.ai","homepage":"https://www.youtube.com/channel/UCk6ONJlPzjw3DohAeMSgsng","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCk6ONJlPzjw3DohAeMSgsng","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCk6ONJlPzjw3DohAeMSgsng"},{"title":"IBM Research","homepage":"https://www.youtube.com/channel/UCwx7Y3W30N8aS_tiCy2x-2g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCwx7Y3W30N8aS_tiCy2x-2g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCwx7Y3W30N8aS_tiCy2x-2g"},{"title":"James Briggs","homepage":"https://www.youtube.com/channel/UCv83tO5cePwHMt1952IVVHw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCv83tO5cePwHMt1952IVVHw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCv83tO5cePwHMt1952IVVHw"},{"title":"Jeremy Howard","homepage":"https://www.youtube.com/channel/UCX7Y2qWriXpqocG97SFW2OQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCX7Y2qWriXpqocG97SFW2OQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCX7Y2qWriXpqocG97SFW2OQ"},{"title":"Joma Tech","homepage":"https://www.youtube.com/channel/UCV0qA-eDDICsRR9rPcnG7tw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCV0qA-eDDICsRR9rPcnG7tw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCV0qA-eDDICsRR9rPcnG7tw"},{"title":"Jordan Harrod","homepage":"https://www.youtube.com/channel/UC1H1NWNTG2Xi3pt85ykVSHA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC1H1NWNTG2Xi3pt85ykVSHA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC1H1NWNTG2Xi3pt85ykVSHA"},{"title":"Kaggle","homepage":"https://www.youtube.com/channel/UCSNeZleDn9c74yQc-EKnVTA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCSNeZleDn9c74yQc-EKnVTA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCSNeZleDn9c74yQc-EKnVTA"},{"title":"Keith Galli","homepage":"https://www.youtube.com/channel/UCq6XkhO5SZ66N04IcPbqNcw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCq6XkhO5SZ66N04IcPbqNcw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCq6XkhO5SZ66N04IcPbqNcw"},{"title":"Ken Jee","homepage":"https://www.youtube.com/channel/UCiT9RITQ9PW6BhXK0y2jaeg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCiT9RITQ9PW6BhXK0y2jaeg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCiT9RITQ9PW6BhXK0y2jaeg"},{"title":"LlamaIndex","homepage":"https://www.youtube.com/channel/UCeRjipR4_SsCddq9VZ2AeKg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCeRjipR4_SsCddq9VZ2AeKg"},{"title":"Machine Learning Street Talk","homepage":"https://www.youtube.com/channel/UCMLtBahI5DMrt0NPvDSoIRQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCMLtBahI5DMrt0NPvDSoIRQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCMLtBahI5DMrt0NPvDSoIRQ"},{"title":"Manning Publications","homepage":"https://www.youtube.com/channel/UCDia_lkNYKLJVLRLQl_-pFw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCDia_lkNYKLJVLRLQl_-pFw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCDia_lkNYKLJVLRLQl_-pFw"},{"title":"Martin Thissen","homepage":"https://www.youtube.com/channel/UCXx0JWOKERPZdzczPfY-huA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCXx0JWOKERPZdzczPfY-huA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCXx0JWOKERPZdzczPfY-huA"},{"title":"Matt Wolfe","homepage":"https://www.youtube.com/channel/UChpleBmo18P08aKCIgti38g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UChpleBmo18P08aKCIgti38g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UChpleBmo18P08aKCIgti38g"},{"title":"MLOps.community","homepage":"https://www.youtube.com/channel/UCG6qpjVnBTTT8wLGBygANOQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCG6qpjVnBTTT8wLGBygANOQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCG6qpjVnBTTT8wLGBygANOQ"},{"title":"Nicholas Renotte","homepage":"https://www.youtube.com/channel/UCHXa4OpASJEwrHrLeIzw7Yg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCHXa4OpASJEwrHrLeIzw7Yg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCHXa4OpASJEwrHrLeIzw7Yg"},{"title":"NVIDIA","homepage":"https://www.youtube.com/channel/UCHuiy8bXnmK5nisYHUd1J5g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCHuiy8bXnmK5nisYHUd1J5g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCHuiy8bXnmK5nisYHUd1J5g"},{"title":"Olivio Sarikas","homepage":"https://www.youtube.com/channel/UCCKx8mAHiFus-XYQLy_WnaA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCCKx8mAHiFus-XYQLy_WnaA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCCKx8mAHiFus-XYQLy_WnaA"},{"title":"Patrick Loeber","homepage":"https://www.youtube.com/channel/UCbXgNpp0jedKWcQiULLbDTA","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCbXgNpp0jedKWcQiULLbDTA","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCbXgNpp0jedKWcQiULLbDTA"},{"title":"Playground AI","homepage":"https://www.youtube.com/channel/UCUbLzJ30GLE1F5OSWNoYs9g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCUbLzJ30GLE1F5OSWNoYs9g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCUbLzJ30GLE1F5OSWNoYs9g"},{"title":"Prompt Engineering","homepage":"https://www.youtube.com/channel/UCDq7SjbgRKty5TgGafW8Clg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCDq7SjbgRKty5TgGafW8Clg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCDq7SjbgRKty5TgGafW8Clg"},{"title":"Rabbitmetrics","homepage":"https://www.youtube.com/channel/UCNszHNG0PlhWJdtNqFvwMWw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCNszHNG0PlhWJdtNqFvwMWw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCNszHNG0PlhWJdtNqFvwMWw"},{"title":"Reuven Lerner","homepage":"https://www.youtube.com/channel/UCBqMxo5ch1NN0hZsM58gf6Q","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCBqMxo5ch1NN0hZsM58gf6Q","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCBqMxo5ch1NN0hZsM58gf6Q"},{"title":"Sam Witteveen","homepage":"https://www.youtube.com/channel/UC55ODQSvARtgSyc8ThfiepQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC55ODQSvARtgSyc8ThfiepQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC55ODQSvARtgSyc8ThfiepQ"},{"title":"sentdex","homepage":"https://www.youtube.com/channel/UCfzlCWGWYyIQ0aLC5w48gBQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCfzlCWGWYyIQ0aLC5w48gBQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCfzlCWGWYyIQ0aLC5w48gBQ"},{"title":"Super Data Science Podcast with Jon Krohn","homepage":"https://www.youtube.com/channel/UCMbtqTGdSsxYYhhTpV4lSTQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCMbtqTGdSsxYYhhTpV4lSTQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCMbtqTGdSsxYYhhTpV4lSTQ"},{"title":"TensorFlow","homepage":"https://www.youtube.com/channel/UC0rqucBdTuFTjJiefW5t-IQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC0rqucBdTuFTjJiefW5t-IQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC0rqucBdTuFTjJiefW5t-IQ"},{"title":"The AI Advantage","homepage":"https://www.youtube.com/channel/UCHhYXsLBEVVnbvsq57n1MTQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCHhYXsLBEVVnbvsq57n1MTQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCHhYXsLBEVVnbvsq57n1MTQ"},{"title":"The Data Scientist Show - Daliana Liu","homepage":"https://www.youtube.com/channel/UCa0RTSXWyZdh7IciV9r-3ow","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCa0RTSXWyZdh7IciV9r-3ow","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCa0RTSXWyZdh7IciV9r-3ow"},{"title":"Thu Vu data analytics","homepage":"https://www.youtube.com/channel/UCJQJAI7IjbLcpsjWdSzYz0Q","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCJQJAI7IjbLcpsjWdSzYz0Q","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCJQJAI7IjbLcpsjWdSzYz0Q"},{"title":"Towards Data Science","homepage":"https://www.youtube.com/channel/UCuHZ1UYfHRqk3-5N5oc97Kw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCuHZ1UYfHRqk3-5N5oc97Kw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCuHZ1UYfHRqk3-5N5oc97Kw"},{"title":"Two Minute Papers","homepage":"https://www.youtube.com/channel/UCbfYPyITQ-7l4upoX8nvctg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCbfYPyITQ-7l4upoX8nvctg"},{"title":"Unconventional Coding","homepage":"https://www.youtube.com/channel/UCqp4QHWfVYd65onoyraiYvg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCqp4QHWfVYd65onoyraiYvg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCqp4QHWfVYd65onoyraiYvg"},{"title":"Venelin Valkov","homepage":"https://www.youtube.com/channel/UCoW_WzQNJVAjxo4osNAxd_g","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCoW_WzQNJVAjxo4osNAxd_g","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCoW_WzQNJVAjxo4osNAxd_g"},{"title":"Weights & Biases","homepage":"https://www.youtube.com/channel/UCBp3w4DCEC64FZr4k9ROxig","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCBp3w4DCEC64FZr4k9ROxig"},{"title":"What's AI by Louis Bouchard","homepage":"https://www.youtube.com/channel/UCUzGQrN-lyyc0BWTYoJM_Sg","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCUzGQrN-lyyc0BWTYoJM_Sg","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCUzGQrN-lyyc0BWTYoJM_Sg"},{"title":"Wolfram","homepage":"https://www.youtube.com/channel/UCJekgf6k62CQHdENWf2NgAQ","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCJekgf6k62CQHdENWf2NgAQ","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCJekgf6k62CQHdENWf2NgAQ"},{"title":"WorldofAI","homepage":"https://www.youtube.com/channel/UC2WmuBuFq6gL08QYG-JjXKw","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UC2WmuBuFq6gL08QYG-JjXKw","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UC2WmuBuFq6gL08QYG-JjXKw"},{"title":"Yannic Kilcher","homepage":"https://www.youtube.com/channel/UCZHmQk67mSJgfCCTn7xBfew","feed":"https://www.youtube.com/feeds/videos.xml?channel_id=UCZHmQk67mSJgfCCTn7xBfew","description":"","category":"Videos","tags":["YouTube"],"youtube_channel_id":"UCZHmQk67mSJgfCCTn7xBfew"},{"title":"aijobs.net","homepage":"https://aijobs.net/","feed":"https://aijobs.net/feed/","description":"The most comprehensive, lean and clean, no-nonsense job site related to all things Artificial Intelligence (AI), Machine Learning (ML), Natural Language Processing (NLP), Computer Vision (CV), Data Engineering, Data Analytics, Big Data, and Data Science in general.","category":"Jobs","tags":[],"youtube_channel_id":null}]</script>
+<script>
+"use strict";
+
+let BUILTIN_SOURCES = JSON.parse(document.getElementById('sources-data').textContent);
+const REMOTE_SOURCES_URL = 'https://raw.githubusercontent.com/saorsa-labs/news/main/sources.json';
+let CUSTOM_FEEDS = [];
+try {
+  const raw = localStorage.getItem('ainewshub:custom_feeds:v1');
+  if (raw) CUSTOM_FEEDS = JSON.parse(raw) || [];
+} catch {}
+let SOURCES = [...BUILTIN_SOURCES, ...CUSTOM_FEEDS];
+function persistCustomFeeds() {
+  try { localStorage.setItem('ainewshub:custom_feeds:v1', JSON.stringify(CUSTOM_FEEDS)); } catch {}
+}
+function rebuildSources() {
+  SOURCES = [...BUILTIN_SOURCES, ...CUSTOM_FEEDS];
+}
+
+// ---------- State ----------
+const state = {
+  view: 'timeline',
+  query: '',
+  sort: 'newest',
+  catFilter: new Set(),       // empty = all
+  tagFilter: new Set(),       // empty = all
+  timeFilter: 'all',
+  items: [],                  // { source, title, link, date, summary, image, video, category, tags }
+  itemKeys: new Set(),
+  loadedSources: new Set(),
+  failedSources: new Set(),
+  paused: false,
+  loadAll: false,
+  startedAt: Date.now(),
+};
+
+const PROXIES = [
+  url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  url => 'https://corsproxy.io/?' + encodeURIComponent(url),
+  url => 'https://thingproxy.freeboard.io/fetch/' + url,
+];
+function shuffledProxies() {
+  // Rotate first index over time to spread load across proxies
+  const k = Math.floor(Date.now() / 120000) % PROXIES.length;
+  return [...PROXIES.slice(k), ...PROXIES.slice(0, k)];
+}
+
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
+const CACHE_KEY = 'ainewshub:cache:v2';
+const CUSTOM_FEEDS_KEY = 'ainewshub:custom_feeds:v1';
+
+// ---------- Cache ----------
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch { return {}; }
+}
+function saveCache(cache) {
+  try {
+    // Cap cache size to avoid quota errors
+    const entries = Object.entries(cache);
+    if (entries.length > 400) {
+      entries.sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
+      cache = Object.fromEntries(entries.slice(0, 400));
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    // Quota? wipe and retry once
+    try { localStorage.removeItem(CACHE_KEY); } catch {}
+  }
+}
+let cache = loadCache();
+
+// ---------- Helpers ----------
+function normalizeFeedUrl(url) {
+  // Reddit blocks the regular RSS for many user agents — use old.reddit.com which is friendlier
+  if (/(?:^|\/\/)(www\.)?reddit\.com\//.test(url)) {
+    url = url.replace(/^https?:\/\/(www\.)?reddit\.com/i, 'https://old.reddit.com');
+    if (!/\.rss(\?|$)/.test(url) && !/\.json/.test(url)) {
+      url = url.replace(/\/?$/, '/.rss');
+    }
+  }
+  return url;
+}
+function timeAgo(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d)) return '';
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 0) return 'just now';
+  if (sec < 60) return sec + 's ago';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr + 'h ago';
+  const day = Math.floor(hr / 24);
+  if (day < 30) return day + 'd ago';
+  const mo = Math.floor(day / 30);
+  if (mo < 12) return mo + 'mo ago';
+  return Math.floor(mo / 12) + 'y ago';
+}
+function stripHtml(s) {
+  if (!s) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = s;
+  let txt = tmp.textContent || tmp.innerText || '';
+  return txt.replace(/\s+/g, ' ').trim();
+}
+function escAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
+function escText(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+function timeWindowMs(filter) {
+  switch (filter) {
+    case '24h': return 24 * 3600 * 1000;
+    case 'week': return 7 * 24 * 3600 * 1000;
+    case 'month': return 30 * 24 * 3600 * 1000;
+    default: return Infinity;
+  }
+}
+
+// ---------- Fetch + parse ----------
+async function fetchWithProxies(url) {
+  let lastErr;
+  for (const p of shuffledProxies()) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 18000);
+      const r = await fetch(p(url), { signal: ctrl.signal, redirect: 'follow' });
+      clearTimeout(t);
+      if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
+      const text = await r.text();
+      if (!text || text.length < 60) { lastErr = new Error('empty'); continue; }
+      return text;
+    } catch (e) { lastErr = e; continue; }
+  }
+  throw lastErr || new Error('all proxies failed');
+}
+
+function parseFeed(xmlText, source) {
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if (doc.querySelector('parsererror')) {
+    // Try as HTML — some proxies wrap content
+    return [];
+  }
+  const out = [];
+  // RSS 2.0 / RSS 1.0
+  const items = doc.querySelectorAll('item');
+  if (items.length) {
+    items.forEach(it => {
+      const title = stripHtml(it.querySelector('title')?.textContent);
+      const link = it.querySelector('link')?.textContent?.trim() || '';
+      const pub = it.querySelector('pubDate, dc\\:date, date')?.textContent?.trim();
+      const desc = it.querySelector('description, content\\:encoded, summary')?.textContent || '';
+      // Find image
+      let img = it.querySelector('media\\:thumbnail, media\\:content')?.getAttribute('url')
+            || it.querySelector('enclosure[type^="image"]')?.getAttribute('url') || '';
+      if (!img) {
+        const m = desc.match(/<img[^>]+src=['"]([^'"]+)['"]/i);
+        if (m) img = m[1];
+      }
+      out.push({
+        source: source.title,
+        sourceCategory: source.category,
+        sourceTags: source.tags,
+        sourceFeed: source.feed,
+        title: title || '(no title)',
+        link, date: pub, image: img,
+        summary: stripHtml(desc).slice(0, 400),
+      });
+    });
+    return out;
+  }
+  // Atom (YouTube, Atom feeds)
+  const entries = doc.querySelectorAll('entry');
+  entries.forEach(en => {
+    const title = stripHtml(en.querySelector('title')?.textContent);
+    let link = '';
+    en.querySelectorAll('link').forEach(l => {
+      const rel = l.getAttribute('rel') || 'alternate';
+      if (rel === 'alternate' && !link) link = l.getAttribute('href') || '';
+    });
+    if (!link) link = en.querySelector('link')?.getAttribute('href') || en.querySelector('link')?.textContent || '';
+    const pub = en.querySelector('published, updated')?.textContent?.trim();
+    const summary = en.querySelector('summary, content, media\\:description')?.textContent || '';
+    const img = en.querySelector('media\\:thumbnail')?.getAttribute('url') || '';
+    out.push({
+      source: source.title,
+      sourceCategory: source.category,
+      sourceTags: source.tags,
+      sourceFeed: source.feed,
+      title: title || '(no title)',
+      link, date: pub, image: img,
+      summary: stripHtml(summary).slice(0, 400),
+      isVideo: !!source.youtube_channel_id,
+    });
+  });
+  return out;
+}
+
+async function loadSource(source) {
+  const key = source.feed;
+  // Try cache
+  const cached = cache[key];
+  if (cached && (Date.now() - (cached.ts || 0)) < CACHE_TTL_MS) {
+    return cached.items || [];
+  }
+  const url = normalizeFeedUrl(source.feed);
+  const xml = await fetchWithProxies(url);
+  const items = parseFeed(xml, source);
+  cache[key] = { ts: Date.now(), items: items.slice(0, 25) };
+  return cache[key].items;
+}
+
+// ---------- Render ----------
+const els = {
+  timeline: document.getElementById('view-timeline'),
+  videos: document.getElementById('view-videos'),
+  podcasts: document.getElementById('view-podcasts'),
+  sources: document.getElementById('view-sources'),
+  empty: document.getElementById('empty-state'),
+  info: document.getElementById('info'),
+  catList: document.getElementById('cat-list'),
+  tagList: document.getElementById('tag-list'),
+  cntTimeline: document.getElementById('cnt-timeline'),
+  cntVideos: document.getElementById('cnt-videos'),
+  cntPodcasts: document.getElementById('cnt-podcasts'),
+  cntSources: document.getElementById('cnt-sources'),
+  progLabel: document.getElementById('prog-label'),
+  progNum: document.getElementById('prog-num'),
+  progFill: document.getElementById('prog-fill'),
+  pauseBtn: document.getElementById('pause-btn'),
+  loadAllBtn: document.getElementById('loadall-btn'),
+  errBanner: document.getElementById('error-banner'),
+};
+
+function buildSidebar() {
+  const cats = {};
+  const tags = {};
+  SOURCES.forEach(s => {
+    cats[s.category] = (cats[s.category] || 0) + 1;
+    (s.tags || []).forEach(t => tags[t] = (tags[t] || 0) + 1);
+  });
+  const catOrder = ['News', 'Podcasts', 'Videos', 'Jobs'];
+  els.catList.innerHTML = catOrder.filter(c => cats[c]).map(c =>
+    `<div class="filter-item" data-cat="${c}"><div class="label-wrap"><span class="dot ${c}"></span><span>${c}</span></div><span class="num">${cats[c]}</span></div>`
+  ).join('');
+  els.tagList.innerHTML = Object.entries(tags).sort((a,b)=>b[1]-a[1]).map(([t, n]) =>
+    `<div class="filter-item" data-tag="${escAttr(t)}"><div class="label-wrap"><span>${escText(t)}</span></div><span class="num">${n}</span></div>`
+  ).join('');
+  els.cntSources.textContent = SOURCES.length;
+}
+
+function applyFilters(items) {
+  const q = state.query.toLowerCase();
+  const win = timeWindowMs(state.timeFilter);
+  const now = Date.now();
+  return items.filter(it => {
+    if (state.catFilter.size && !state.catFilter.has(it.sourceCategory)) return false;
+    if (state.tagFilter.size) {
+      const has = (it.sourceTags || []).some(t => state.tagFilter.has(t));
+      if (!has) return false;
+    }
+    if (q) {
+      const hay = (it.title + ' ' + it.source + ' ' + (it.summary || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (win !== Infinity) {
+      const d = it.date ? new Date(it.date).getTime() : 0;
+      if (!d || (now - d) > win) return false;
+    }
+    return true;
+  });
+}
+
+function sortItems(items) {
+  const dir = state.sort === 'oldest' ? 1 : -1;
+  return items.slice().sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    return (da - db) * dir;
+  });
+}
+
+function renderTimeline() {
+  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory !== 'Videos')));
+  els.cntTimeline.textContent = items.length;
+  if (!items.length) {
+    els.timeline.innerHTML = '';
+    if (state.view === 'timeline') els.empty.classList.remove('hidden');
+    return;
+  }
+  els.empty.classList.add('hidden');
+  // Cap render to 200 for perf
+  const render = items.slice(0, 200);
+  els.timeline.innerHTML = render.map(cardHtml).join('');
+}
+
+function renderPodcasts() {
+  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Podcasts')));
+  els.cntPodcasts.textContent = items.length;
+  if (!items.length) {
+    els.podcasts.innerHTML = '<div class="state"><div class="icon">🎙️</div><div>No podcast episodes loaded yet.</div></div>';
+    return;
+  }
+  els.podcasts.innerHTML = items.slice(0, 200).map(cardHtml).join('');
+}
+
+function renderVideos() {
+  const items = sortItems(applyFilters(state.items.filter(i => i.sourceCategory === 'Videos')));
+  els.cntVideos.textContent = items.length;
+  if (!items.length) {
+    els.videos.innerHTML = '<div class="state"><div class="icon">🎬</div><div>No videos loaded yet. Loading…</div></div>';
+    return;
+  }
+  els.videos.innerHTML = items.slice(0, 120).map(it => {
+    let thumb = it.image;
+    // Derive YouTube thumbnail from video URL if missing
+    if (!thumb && it.link) {
+      const m = it.link.match(/[?&]v=([\w-]{6,})/) || it.link.match(/\/watch\?v=([\w-]{6,})/);
+      if (m) thumb = `https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg`;
+    }
+    return `
+      <a class="video-card" href="${escAttr(it.link)}" target="_blank" rel="noopener">
+        <div class="thumb" style="${thumb ? `background-image:url('${escAttr(thumb)}')` : ''}">
+          <div class="play">▶</div>
+        </div>
+        <div class="body">
+          <h3>${escText(it.title)}</h3>
+          <div class="meta"><span>${escText(it.source)}</span><span>${escText(timeAgo(it.date))}</span></div>
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderSources() {
+  const q = state.query.toLowerCase();
+  const filtered = SOURCES.filter(s => {
+    if (state.catFilter.size && !state.catFilter.has(s.category)) return false;
+    if (state.tagFilter.size && !(s.tags || []).some(t => state.tagFilter.has(t))) return false;
+    if (q) {
+      const hay = (s.title + ' ' + (s.description || '') + ' ' + s.feed).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  // Sort custom first
+  filtered.sort((a, b) => Number(!!b.isCustom) - Number(!!a.isCustom));
+  const customCount = CUSTOM_FEEDS.length;
+  const toolbar = `
+    <div class="sources-toolbar">
+      <div class="stats">
+        <b>${SOURCES.length}</b> total · <b>${customCount}</b> custom · <b>${BUILTIN_SOURCES.length}</b> built-in
+      </div>
+      <button class="btn primary" id="sources-add-btn">+ Add custom feed</button>
+    </div>
+  `;
+  const cards = filtered.map(s => {
+    const customMarker = s.isCustom
+      ? `<span class="custom-badge">custom</span>`
+      : '';
+    const removeBtn = s.isCustom
+      ? `<button class="remove-btn" data-remove="${escAttr(s.feed)}" title="Remove this feed">remove</button>`
+      : '';
+    return `
+    <div class="source-card${s.isCustom ? ' is-custom' : ''}">
+      <div class="meta" style="margin-bottom:6px;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="src-pill ${s.category}">${escText(s.category)}</span>
+          ${customMarker}
+        </div>
+        ${state.loadedSources.has(s.feed) ? '<span style="color:var(--text-3);font-size:11px">✓ loaded</span>' :
+          state.failedSources.has(s.feed) ? '<span style="color:#ff6b8a;font-size:11px">✕ failed</span>' :
+          '<span style="color:var(--text-3);font-size:11px">·</span>'}
+      </div>
+      <h4><a href="${escAttr(s.homepage || s.feed)}" target="_blank" rel="noopener">${escText(s.title)}</a></h4>
+      <div class="desc">${escText(s.description || '')}</div>
+      <div class="footer">
+        <span>${(s.tags || []).map(t => escText(t)).join(' · ') || '—'}</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          ${removeBtn}
+          <a href="${escAttr(s.feed)}" target="_blank" rel="noopener" title="${escAttr(s.feed)}">RSS</a>
+        </span>
+      </div>
+    </div>
+  `;
+  }).join('');
+  els.sources.innerHTML = toolbar + `<div class="sources-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:12px">${cards}</div>`;
+  // Wire up the in-tab buttons
+  document.getElementById('sources-add-btn')?.addEventListener('click', openAddFeedModal);
+  els.sources.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => removeCustomFeed(btn.getAttribute('data-remove')));
+  });
+}
+
+function cardHtml(it) {
+  const ago = timeAgo(it.date);
+  const dotCat = it.sourceCategory || 'News';
+  const tags = (it.sourceTags || []).slice(0, 3);
+  const hasThumb = !!it.image;
+  return `
+    <article class="card${hasThumb ? ' has-thumb' : ''}">
+      ${hasThumb ? `<div class="thumb" style="background-image:url('${escAttr(it.image)}')"></div>` : ''}
+      <div>
+        <div class="meta">
+          <span class="src-pill ${dotCat}">${escText(it.source)}</span>
+          ${ago ? `<span>${escText(ago)}</span>` : ''}
+        </div>
+        <h2><a href="${escAttr(it.link)}" target="_blank" rel="noopener">${escText(it.title)}</a></h2>
+        ${it.summary ? `<p class="summary">${escText(it.summary)}</p>` : ''}
+        ${tags.length ? `<div class="tag-row">${tags.map(t => `<span class="tag">${escText(t)}</span>`).join('')}</div>` : ''}
+      </div>
+    </article>
+  `;
+}
+
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  ['timeline','videos','podcasts','sources'].forEach(k => {
+    els[k].classList.toggle('hidden', k !== v);
+  });
+  els.empty.classList.add('hidden');
+  if (v === 'timeline') renderTimeline();
+  if (v === 'videos') renderVideos();
+  if (v === 'podcasts') renderPodcasts();
+  if (v === 'sources') renderSources();
+}
+
+function renderAll() {
+  renderTimeline();
+  renderVideos();
+  renderPodcasts();
+  renderSources();
+}
+
+function updateInfo() {
+  const total = state.loadedSources.size + state.failedSources.size;
+  els.progNum.textContent = `${total}/${SOURCES.length}`;
+  els.progFill.style.width = (total / SOURCES.length * 100).toFixed(1) + '%';
+  if (state.paused) {
+    els.progLabel.innerHTML = `Paused`;
+  } else if (total >= SOURCES.length) {
+    els.progLabel.innerHTML = `Done · ${state.failedSources.size} failed`;
+  } else {
+    els.progLabel.innerHTML = `<span class="spinner"></span> Loading…`;
+  }
+  els.info.innerHTML = `<b>${state.items.length}</b> items · <b>${state.loadedSources.size}</b> sources loaded${state.failedSources.size ? ` · <span style="color:#ff8da3">${state.failedSources.size} failed</span>` : ''}`;
+}
+
+// ---------- Loader pipeline ----------
+function pickInitialBatch() {
+  // Prioritize: News (especially well-known), Videos, Podcasts. Skip Reddit (often blocked) until "Load all".
+  const priority = (s) => {
+    let p = 0;
+    if (s.category === 'News') p += 0;
+    else if (s.category === 'Videos') p += 1;
+    else if (s.category === 'Podcasts') p += 2;
+    else p += 3;
+    if ((s.tags || []).includes('Reddit')) p += 10;
+    if ((s.tags || []).includes('Lab/Vendor')) p -= 1;
+    return p;
+  };
+  const sorted = SOURCES.slice().sort((a,b) => priority(a) - priority(b));
+  return sorted.slice(0, 60);  // initial batch
+}
+
+async function runLoader(sources) {
+  const concurrency = 6;
+  let idx = 0;
+  let active = 0;
+  return new Promise(resolve => {
+    const tick = () => {
+      if (state.paused) {
+        if (active === 0) return;  // resume will retick
+      }
+      while (!state.paused && active < concurrency && idx < sources.length) {
+        const s = sources[idx++];
+        active++;
+        loadSource(s).then(items => {
+          state.loadedSources.add(s.feed);
+          for (const it of items) {
+            const k = (it.link || it.title) + '|' + s.feed;
+            if (state.itemKeys.has(k)) continue;
+            state.itemKeys.add(k);
+            state.items.push(it);
+          }
+          if (state.loadedSources.size % 4 === 0) {
+            saveCache(cache);
+            renderAll();
+          }
+        }).catch(() => {
+          state.failedSources.add(s.feed);
+        }).finally(() => {
+          active--;
+          updateInfo();
+          if (idx >= sources.length && active === 0) {
+            saveCache(cache);
+            renderAll();
+            resolve();
+          } else {
+            setTimeout(tick, 0);
+          }
+        });
+      }
+      if (idx >= sources.length && active === 0) resolve();
+    };
+    tick();
+    state.resumeTick = tick;  // for pause/resume
+  });
+}
+
+async function loadAll() {
+  const remaining = SOURCES.filter(s => !state.loadedSources.has(s.feed) && !state.failedSources.has(s.feed));
+  if (!remaining.length) return;
+  els.loadAllBtn.disabled = true;
+  els.loadAllBtn.textContent = 'Loading…';
+  await runLoader(remaining);
+  els.loadAllBtn.textContent = '✓ All loaded';
+}
+
+// ---------- Auto-update from saorsa-labs/news ----------
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5200);
+}
+
+async function autoUpdateSources() {
+  let text = null;
+  try {
+    const r = await fetch(REMOTE_SOURCES_URL, { cache: 'no-cache' });
+    if (r.ok) text = await r.text();
+  } catch {}
+  if (!text) {
+    try { text = await fetchWithProxies(REMOTE_SOURCES_URL); } catch { return; }
+  }
+  let remote;
+  try { remote = JSON.parse(text); } catch { return; }
+  if (!Array.isArray(remote) || remote.length < 50) return;
+  const localKeys = new Set(BUILTIN_SOURCES.map(s => s.feed));
+  const remoteKeys = new Set(remote.map(s => s.feed));
+  const added = remote.filter(s => !localKeys.has(s.feed));
+  const removed = BUILTIN_SOURCES.filter(s => !remoteKeys.has(s.feed));
+  if (!added.length && !removed.length && remote.length === BUILTIN_SOURCES.length) return;
+  BUILTIN_SOURCES = remote;
+  rebuildSources();
+  buildSidebar();
+  renderAll();
+  const sub = document.querySelector('.brand .sub');
+  if (sub) sub.textContent = `${BUILTIN_SOURCES.length} sources · foorilla/allainews`;
+  let msg = '✓ Source list updated';
+  if (added.length || removed.length) {
+    msg += ` · +${added.length} added · −${removed.length} removed`;
+  }
+  showToast(msg);
+}
+
+async function refreshAll() {
+  cache = {};
+  saveCache(cache);
+  state.items = [];
+  state.itemKeys.clear();
+  state.loadedSources.clear();
+  state.failedSources.clear();
+  renderAll();
+  updateInfo();
+  await runLoader(pickInitialBatch());
+  if (state.loadAll) await loadAll();
+}
+
+// ---------- Custom feeds ----------
+function openAddFeedModal() {
+  const tpl = document.getElementById('add-feed-modal-tpl');
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '';
+  root.appendChild(tpl.content.cloneNode(true));
+  const backdrop = root.querySelector('.modal-backdrop');
+  const closeAll = () => { root.innerHTML = ''; };
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeAll(); });
+  root.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAll));
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { closeAll(); document.removeEventListener('keydown', esc); }
+  });
+  const urlInput = root.querySelector('#feed-url');
+  setTimeout(() => urlInput.focus(), 50);
+  const fb = root.querySelector('#modal-feedback');
+  const submit = root.querySelector('#feed-submit');
+
+  async function doSubmit() {
+    const url = urlInput.value.trim();
+    if (!url) { showFb('error', 'Please enter a feed URL.'); return; }
+    if (!/^https?:\/\//i.test(url)) { showFb('error', 'URL must start with http:// or https://'); return; }
+    if (SOURCES.some(s => s.feed === url)) { showFb('error', 'That feed is already in your list.'); return; }
+    submit.disabled = true;
+    submit.innerHTML = '<span class="spinner"></span> Validating…';
+    showFb('info', '<span class="spinner"></span> Fetching feed and checking format…');
+    try {
+      const result = await addCustomFeed({
+        feed: url,
+        title: root.querySelector('#feed-title').value.trim(),
+        category: root.querySelector('#feed-category').value,
+        tags: root.querySelector('#feed-tags').value.split(',').map(s => s.trim()).filter(Boolean),
+      });
+      showFb('info', `✓ Added <b>${escText(result.title)}</b> (${result.itemCount} items). Closing…`);
+      setTimeout(closeAll, 700);
+    } catch (e) {
+      showFb('error', '✕ ' + (e.message || 'Could not add feed'));
+      submit.disabled = false;
+      submit.textContent = 'Add feed';
+    }
+  }
+  function showFb(kind, html) {
+    fb.style.display = '';
+    fb.className = 'feedback ' + kind;
+    fb.innerHTML = html;
+  }
+  submit.addEventListener('click', doSubmit);
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSubmit(); });
+}
+
+async function addCustomFeed({ feed, title, category, tags }) {
+  // Validate by fetching + parsing
+  const xml = await fetchWithProxies(normalizeFeedUrl(feed));
+  if (!xml) throw new Error('No data from any proxy');
+  const probe = { title: title || 'Custom', category: category || 'News', tags: tags || [], feed };
+  const items = parseFeed(xml, probe);
+  if (!items.length) throw new Error('No items found in feed (is the URL correct?)');
+  // Auto-detect title/description from XML if missing
+  let autoTitle = title;
+  let autoDesc = '';
+  let autoHomepage = '';
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (!autoTitle) {
+      const t = doc.querySelector('channel > title') || doc.querySelector('feed > title');
+      if (t) autoTitle = t.textContent.trim();
+    }
+    const d = doc.querySelector('channel > description') || doc.querySelector('feed > subtitle');
+    if (d) autoDesc = d.textContent.trim().slice(0, 200);
+    const home = doc.querySelector('channel > link');
+    if (home && home.textContent) autoHomepage = home.textContent.trim();
+    if (!autoHomepage) {
+      const linkAlt = doc.querySelector('feed > link[rel="alternate"]');
+      if (linkAlt) autoHomepage = linkAlt.getAttribute('href') || '';
+    }
+  } catch {}
+  if (!autoTitle) autoTitle = new URL(feed).hostname.replace(/^www\./,'');
+  if (!autoHomepage) {
+    try { const u = new URL(feed); autoHomepage = u.origin; } catch { autoHomepage = feed; }
+  }
+  // Auto-detect YouTube channel feed
+  let yt = null;
+  if (/youtube\.com\/feeds\/videos\.xml\?channel_id=/.test(feed)) {
+    yt = feed.split('channel_id=', 2)[1].trim();
+    if (!category || category === 'News') category = 'Videos';
+  }
+  const newSrc = {
+    title: autoTitle,
+    homepage: autoHomepage,
+    feed,
+    description: autoDesc,
+    category: category || 'News',
+    tags: Array.from(new Set([...(tags || []), 'Custom'])),
+    youtube_channel_id: yt,
+    isCustom: true,
+  };
+  CUSTOM_FEEDS.push(newSrc);
+  persistCustomFeeds();
+  rebuildSources();
+  // Cache items + add to current view
+  cache[feed] = { ts: Date.now(), items: items.slice(0, 25) };
+  saveCache(cache);
+  state.loadedSources.add(feed);
+  for (const it of items) {
+    const k = (it.link || it.title) + '|' + feed;
+    if (state.itemKeys.has(k)) continue;
+    state.itemKeys.add(k);
+    state.items.push({
+      ...it,
+      source: newSrc.title,
+      sourceCategory: newSrc.category,
+      sourceTags: newSrc.tags,
+      sourceFeed: feed,
+    });
+  }
+  buildSidebar();
+  renderAll();
+  updateInfo();
+  return { title: newSrc.title, itemCount: items.length };
+}
+
+function removeCustomFeed(feedUrl) {
+  const idx = CUSTOM_FEEDS.findIndex(f => f.feed === feedUrl);
+  if (idx === -1) return;
+  if (!confirm(`Remove "${CUSTOM_FEEDS[idx].title}" from your list?`)) return;
+  CUSTOM_FEEDS.splice(idx, 1);
+  persistCustomFeeds();
+  rebuildSources();
+  state.items = state.items.filter(it => it.sourceFeed !== feedUrl);
+  state.itemKeys = new Set([...state.itemKeys].filter(k => !k.endsWith('|' + feedUrl)));
+  state.loadedSources.delete(feedUrl);
+  state.failedSources.delete(feedUrl);
+  delete cache[feedUrl];
+  saveCache(cache);
+  buildSidebar();
+  renderAll();
+  updateInfo();
+}
+
+// ---------- Wiring ----------
+function bindUI() {
+  // Tabs
+  document.getElementById('tabs').addEventListener('click', e => {
+    const btn = e.target.closest('.tab');
+    if (btn) setView(btn.dataset.view);
+  });
+  // Search
+  let searchT;
+  document.getElementById('search').addEventListener('input', e => {
+    clearTimeout(searchT);
+    searchT = setTimeout(() => {
+      state.query = e.target.value.trim();
+      renderAll();
+    }, 150);
+  });
+  // Sort
+  document.querySelectorAll('.chip[data-sort]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.chip[data-sort]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.sort = b.dataset.sort;
+      renderAll();
+    });
+  });
+  // Cat filter
+  els.catList.addEventListener('click', e => {
+    const item = e.target.closest('.filter-item');
+    if (!item) return;
+    const cat = item.dataset.cat;
+    if (state.catFilter.has(cat)) state.catFilter.delete(cat);
+    else state.catFilter.add(cat);
+    item.classList.toggle('active');
+    renderAll();
+  });
+  // Tag filter
+  els.tagList.addEventListener('click', e => {
+    const item = e.target.closest('.filter-item');
+    if (!item) return;
+    const tag = item.dataset.tag;
+    if (state.tagFilter.has(tag)) state.tagFilter.delete(tag);
+    else state.tagFilter.add(tag);
+    item.classList.toggle('active');
+    renderAll();
+  });
+  // Time filter
+  document.getElementById('time-list').addEventListener('click', e => {
+    const item = e.target.closest('.filter-item');
+    if (!item) return;
+    document.querySelectorAll('#time-list .filter-item').forEach(x => x.classList.remove('active'));
+    item.classList.add('active');
+    state.timeFilter = item.dataset.time;
+    renderAll();
+  });
+  // Theme toggle
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const cur = document.body.dataset.theme || 'dark';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.body.dataset.theme = next;
+    try { localStorage.setItem('ainewshub:theme', next); } catch {}
+  });
+  try {
+    const t = localStorage.getItem('ainewshub:theme');
+    if (t) document.body.dataset.theme = t;
+  } catch {}
+  // Pause / resume
+  els.pauseBtn.addEventListener('click', () => {
+    state.paused = !state.paused;
+    els.pauseBtn.textContent = state.paused ? '▶ Resume' : '⏸ Pause';
+    if (!state.paused && state.resumeTick) state.resumeTick();
+    updateInfo();
+  });
+  // Load all
+  els.loadAllBtn.addEventListener('click', () => {
+    state.loadAll = true;
+    loadAll();
+  });
+  // Refresh
+  document.getElementById('refresh-btn').addEventListener('click', refreshAll);
+  // Add custom feed (header)
+  document.getElementById('add-feed-btn').addEventListener('click', openAddFeedModal);
+}
+
+async function init() {
+  buildSidebar();
+  bindUI();
+  renderAll();
+  updateInfo();
+  // Hydrate from cache first for instant UX
+  let hydratedCount = 0;
+  for (const s of SOURCES) {
+    const c = cache[s.feed];
+    if (c && (Date.now() - (c.ts || 0)) < CACHE_TTL_MS && Array.isArray(c.items)) {
+      state.loadedSources.add(s.feed);
+      for (const it of c.items) {
+        const fixed = { ...it, source: s.title, sourceCategory: s.category, sourceTags: s.tags, sourceFeed: s.feed };
+        const k = (fixed.link || fixed.title) + '|' + s.feed;
+        if (state.itemKeys.has(k)) continue;
+        state.itemKeys.add(k);
+        state.items.push(fixed);
+      }
+      hydratedCount++;
+    }
+  }
+  if (hydratedCount) renderAll();
+  updateInfo();
+  // Kick off network loader for the initial batch
+  await runLoader(pickInitialBatch().filter(s => !state.loadedSources.has(s.feed)));
+  saveCache(cache);
+  renderAll();
+  // Background: pull the latest source list from saorsa-labs/news so
+  // even downloaded copies stay current as the upstream catalogue grows.
+  autoUpdateSources();
+}
+
+init().catch(e => {
+  els.errBanner.innerHTML = `<div class="error-banner">Init error: ${escText(e.message || e)}</div>`;
+});
+</script>
+</body>
+</html>
