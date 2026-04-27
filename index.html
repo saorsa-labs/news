@@ -616,6 +616,29 @@ a:hover { text-decoration: underline; }
   background: var(--bg-2);
 }
 
+/* New-items pill (auto-refresh) */
+.new-items-pill {
+  position: fixed;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+  cursor: pointer;
+  z-index: 1500;
+  animation: pill-in .25s cubic-bezier(.2,.8,.3,1.2);
+  display: flex; align-items: center; gap: 6px;
+}
+.new-items-pill:hover { box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent); }
+.new-items-pill:active { transform: translateX(-50%) translateY(1px); }
+@keyframes pill-in { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+
 /* Auto-update toast */
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -1411,6 +1434,104 @@ async function hydrateFromItems() {
   return added;
 }
 
+// ---------- Auto-refresh while the tab is open ----------
+// Polls items.json + sources.json on a 15-min cadence and on tab focus.
+// The fetch uses cache:'no-cache', which makes the browser send a
+// conditional If-None-Match — 99% of polls return 304 with empty body
+// (~200B of headers), so this is nearly free.
+const AUTO_REFRESH_MS = 15 * 60 * 1000;  // half the upstream rebuild cadence
+let _refreshTimer = null;
+let _pendingNewItems = [];
+let _lastRefreshAt = 0;
+const REFRESH_MIN_GAP_MS = 60 * 1000;  // ignore re-entry within 60s
+
+async function refreshFromRepo() {
+  if (Date.now() - _lastRefreshAt < REFRESH_MIN_GAP_MS) return;
+  _lastRefreshAt = Date.now();
+  // Source list changes are rare, but keep them in sync too — autoUpdateSources
+  // is idempotent and silent when nothing has changed.
+  try { await autoUpdateSources(); } catch {}
+  let text = null;
+  try {
+    const r = await fetch(REMOTE_ITEMS_URL, { cache: 'no-cache' });
+    if (r.status === 304) return;        // unchanged — nothing new on server
+    if (r.ok) text = await r.text();
+  } catch { return; }
+  if (!text) return;
+  let bundle;
+  try { bundle = JSON.parse(text); } catch { return; }
+  if (!bundle || typeof bundle !== 'object') return;
+
+  const newItems = [];
+  for (const s of SOURCES) {
+    const payload = bundle[s.feed];
+    if (!payload || !Array.isArray(payload.items) || !payload.items.length) continue;
+    const local = cache[s.feed];
+    if (local && (local.ts || 0) >= (payload.ts || 0)) continue;
+    cache[s.feed] = { ts: payload.ts || Date.now(), items: payload.items.slice(0, 25) };
+    state.loadedSources.add(s.feed);
+    for (const it of payload.items) {
+      const k = (it.link || it.title) + '|' + s.feed;
+      if (state.itemKeys.has(k)) continue;
+      state.itemKeys.add(k);
+      newItems.push({
+        ...it,
+        source: s.title,
+        sourceCategory: s.category,
+        sourceTags: s.tags,
+        sourceFeed: s.feed,
+      });
+    }
+  }
+  if (!newItems.length) return;
+  saveCache(cache);
+
+  // If the user is at the top of the timeline, merge silently. If they've
+  // scrolled into a story, queue the items behind a "↑ N new" pill so we
+  // don't yank their reading position.
+  const onActiveListView = state.view === 'timeline' || state.view === 'videos' || state.view === 'podcasts';
+  const nearTop = window.scrollY < 240;
+  if (!onActiveListView || nearTop) {
+    state.items.push(...newItems);
+    renderAll();
+    updateInfo();
+  } else {
+    _pendingNewItems.push(...newItems);
+    showNewItemsPill(_pendingNewItems.length);
+  }
+}
+
+function showNewItemsPill(count) {
+  let pill = document.getElementById('new-items-pill');
+  if (!pill) {
+    pill = document.createElement('button');
+    pill.id = 'new-items-pill';
+    pill.className = 'new-items-pill';
+    pill.addEventListener('click', () => {
+      state.items.push(..._pendingNewItems);
+      _pendingNewItems = [];
+      pill.remove();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderAll();
+      updateInfo();
+    });
+    document.body.appendChild(pill);
+  }
+  pill.innerHTML = `↑ ${count} new item${count === 1 ? '' : 's'}`;
+}
+
+function startAutoRefresh() {
+  if (_refreshTimer) return;
+  _refreshTimer = setInterval(() => {
+    if (!document.hidden) refreshFromRepo();
+  }, AUTO_REFRESH_MS);
+  // Also refresh immediately whenever the tab regains focus.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshFromRepo();
+  });
+  window.addEventListener('focus', () => refreshFromRepo());
+}
+
 // ---------- Auto-update from saorsa-labs/news ----------
 function showToast(msg) {
   const el = document.createElement('div');
@@ -1722,6 +1843,10 @@ async function init() {
   renderAll();
   // Finally, check for source-list changes (additions/removals at the catalogue level).
   autoUpdateSources();
+  // Keep the tab fresh while it's open — items.json poll every 15 min plus
+  // an immediate refresh on tab focus. Most polls hit GitHub raw's 304
+  // cache and download zero bytes, so this is nearly cost-free.
+  startAutoRefresh();
 }
 
 init().catch(e => {
