@@ -63,13 +63,56 @@ Everything runs client-side. The page fetches RSS/Atom feeds through public CORS
 
 ## How it stays current
 
-A scheduled GitHub Action runs every Sunday and:
+A scheduled GitHub Action runs **every 30 minutes** and:
 
 1. Pulls the latest README from [foorilla/allainews_sources](https://github.com/foorilla/allainews_sources)
 2. Re-runs `build.py` to regenerate `sources.json` and `index.html`
-3. Commits if anything changed
+3. Commits if anything changed (most runs exit in seconds with no commit)
 
-Because the page also fetches `sources.json` from this repo on every load, **your downloaded copy auto-updates** without you doing anything.
+Because the page also fetches `sources.json` from this repo on every load, **your downloaded copy auto-updates** without you doing anything. Open the page anytime, get the latest sources.
+
+---
+
+## Run your own copy (full control, no dependency on us)
+
+If you'd rather not rely on `saorsa-labs/news`, host your own. Three flavours, easiest first:
+
+### 1. Fork & GitHub Pages (zero install, free, automatic)
+
+```bash
+gh repo fork saorsa-labs/news --clone=false                # or click Fork on GitHub
+gh api -X POST repos/<your-username>/news/pages \
+  -f 'source[branch]=main' -f 'source[path]=/'
+```
+
+You now have your own URL: `https://<your-username>.github.io/news/`. The forked repo also has the rebuild Action, so it'll keep itself in sync with upstream foorilla automatically — no maintenance from you.
+
+### 2. Local web server (works fully offline once first cached)
+
+Clone the repo and serve the folder. Any static-file server works:
+
+```bash
+git clone https://github.com/saorsa-labs/news.git
+cd news
+
+# Python (almost certainly already installed)
+python3 -m http.server 8000
+
+# …or Node, …or Caddy, …or whatever you like
+# npx serve .
+```
+
+Then open `http://localhost:8000/`. It still fetches feeds via public CORS proxies (your network → proxy → feed), so it needs internet, but the page itself is served from your machine.
+
+### 3. Just the file (truly portable)
+
+Drop `index.html` into Dropbox / iCloud / a USB stick. It works from `file://` too. Bookmark it, sync it, do whatever. The only limitation: a few feeds (Reddit notably) refuse `null` origin requests — those'll just show as "failed" in the Sources tab.
+
+### Customising your fork
+
+Edit `build.py` to add/remove sources, change tags or categories, then run `python3 build.py`. Or just hand-edit `sources.json` — it's a flat array of `{title, homepage, feed, description, category, tags, youtube_channel_id}`.
+
+If you want your fork to **stop** auto-updating its source list from `saorsa-labs/news` (so you fully own the catalogue), open `index.html` and either change `REMOTE_SOURCES_URL` to point to your fork's raw URL, or delete the call to `autoUpdateSources()` in `init()`.
 
 ---
 

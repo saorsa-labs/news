@@ -7,7 +7,10 @@ name: Rebuild from upstream
 
 on:
   schedule:
-    - cron: "17 4 * * 0"   # Sundays at 04:17 UTC
+    # Every 30 minutes. Most runs will exit in a few seconds with
+    # "No changes — upstream catalogue unchanged." Public repos get
+    # unlimited Action minutes, so the cost is nil.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
   push:
     paths:
