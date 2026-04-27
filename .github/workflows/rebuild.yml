@@ -36,20 +36,30 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependencies
+        run: pip install --no-cache-dir feedparser
+
       - name: Run build
+        # build.py fetches the upstream README, regenerates sources.json +
+        # index.html, then fetches every RSS/Atom feed in parallel and writes
+        # items.json so the page hydrates instantly on first load.
         run: python3 build.py
 
       - name: Commit any changes
         run: |
           git config user.name  "saorsa-labs-bot"
           git config user.email "actions@github.com"
-          if git diff --quiet -- sources.json index.html; then
-            echo "No changes — upstream catalogue unchanged."
+          if git diff --quiet -- sources.json index.html items.json; then
+            echo "No changes — upstream catalogue and feed items unchanged."
             exit 0
           fi
-          # Summarise the diff in the commit message
           ADDED=$(git diff sources.json | grep -c '^+    "feed":' || true)
           REMOVED=$(git diff sources.json | grep -c '^-    "feed":' || true)
-          git add sources.json index.html
-          git commit -m "chore: rebuild from upstream (+${ADDED} / -${REMOVED} feeds)"
+          git add sources.json index.html items.json
+          if [ "$ADDED" != "0" ] || [ "$REMOVED" != "0" ]; then
+            MSG="chore: rebuild (+${ADDED} / -${REMOVED} feeds, refreshed items)"
+          else
+            MSG="chore: refresh items.json from upstream feeds"
+          fi
+          git commit -m "$MSG"
           git push

@@ -54,6 +54,7 @@ The page **auto-updates its source list from this repo every time you open it**,
 - **Search** — across titles, sources and descriptions
 - **Light & dark themes** — toggle in the header, persisted
 - **7-day cache** — items stay visible even if a feed is briefly down; saves bandwidth
+- **Instant first load** — every 30 min the GitHub Action pre-fetches all 269 feeds server-side and ships an `items.json` (~400 KB gzipped). The page hydrates from that one file instead of fetching 269 feeds individually through CORS proxies, so a fresh visitor sees ~4,000 items in seconds rather than tens of minutes
 
 ### Privacy
 
@@ -67,7 +68,8 @@ A scheduled GitHub Action runs **every 30 minutes** and:
 
 1. Pulls the latest README from [foorilla/allainews_sources](https://github.com/foorilla/allainews_sources)
 2. Re-runs `build.py` to regenerate `sources.json` and `index.html`
-3. Commits if anything changed (most runs exit in seconds with no commit)
+3. Fetches every RSS/Atom feed in parallel (24 workers) and writes `items.json` — a pre-parsed bundle of the most recent 15 items per source
+4. Commits if anything changed
 
 Because the page also fetches `sources.json` from this repo on every load, **your downloaded copy auto-updates** without you doing anything. Open the page anytime, get the latest sources.
 
@@ -122,7 +124,8 @@ You only need this section if you want to regenerate the build locally or work o
 
 ### Requirements
 
-- Python 3.9+ (no third-party packages — uses only the standard library)
+- Python 3.9+
+- `feedparser` (`pip install feedparser`) — only needed if you want `build.py` to also fetch feed items into `items.json`. Without it the build still produces `sources.json` and `index.html`; you just lose the instant-first-load hydration.
 
 ### Rebuild
 

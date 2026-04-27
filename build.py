@@ -11,13 +11,25 @@ Requires: Python 3.9+, no third-party packages.
 """
 from __future__ import annotations
 
+import concurrent.futures
 import html as html_lib
 import json
 import re
+import socket
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
+
+# Bound feedparser's blocking I/O so a few slow / dead feeds don't drag out the build.
+socket.setdefaulttimeout(12)
+
+# feedparser is the only third-party dependency. It's pure-Python, no compile.
+try:
+    import feedparser  # type: ignore
+except ImportError:
+    feedparser = None  # build still works in "sources-only" mode without it
 
 REPO_README_URL = (
     "https://raw.githubusercontent.com/foorilla/allainews_sources/main/README.md"
@@ -826,6 +838,7 @@ a:hover { text-decoration: underline; }
 
 let BUILTIN_SOURCES = JSON.parse(document.getElementById('sources-data').textContent);
 const REMOTE_SOURCES_URL = 'https://raw.githubusercontent.com/saorsa-labs/news/main/sources.json';
+const REMOTE_ITEMS_URL   = 'https://raw.githubusercontent.com/saorsa-labs/news/main/items.json';
 let CUSTOM_FEEDS = [];
 try {
   const raw = localStorage.getItem('ainewshub:custom_feeds:v1');
@@ -1345,6 +1358,52 @@ async function loadAll() {
   els.loadAllBtn.textContent = '✓ All loaded';
 }
 
+// ---------- Server-side pre-fetch hydration ----------
+// items.json is regenerated every 30 min by the GitHub Action and contains
+// up to 15 pre-parsed items per feed. Pulling one ~400KB file beats fetching
+// 269 individual feeds through CORS proxies.
+async function hydrateFromItems() {
+  let text = null;
+  try {
+    const r = await fetch(REMOTE_ITEMS_URL, { cache: 'no-cache' });
+    if (r.ok) text = await r.text();
+  } catch {}
+  if (!text) {
+    try { text = await fetchWithProxies(REMOTE_ITEMS_URL); } catch { return 0; }
+  }
+  let bundle;
+  try { bundle = JSON.parse(text); } catch { return 0; }
+  if (!bundle || typeof bundle !== 'object') return 0;
+  let added = 0;
+  for (const s of SOURCES) {
+    const payload = bundle[s.feed];
+    if (!payload || !Array.isArray(payload.items) || !payload.items.length) continue;
+    const local = cache[s.feed];
+    if (local && (local.ts || 0) >= (payload.ts || 0)) continue; // local is newer
+    cache[s.feed] = { ts: payload.ts || Date.now(), items: payload.items.slice(0, 25) };
+    state.loadedSources.add(s.feed);
+    for (const it of payload.items) {
+      const k = (it.link || it.title) + '|' + s.feed;
+      if (state.itemKeys.has(k)) continue;
+      state.itemKeys.add(k);
+      state.items.push({
+        ...it,
+        source: s.title,
+        sourceCategory: s.category,
+        sourceTags: s.tags,
+        sourceFeed: s.feed,
+      });
+    }
+    added++;
+  }
+  if (added) {
+    saveCache(cache);
+    renderAll();
+    updateInfo();
+  }
+  return added;
+}
+
 // ---------- Auto-update from saorsa-labs/news ----------
 function showToast(msg) {
   const el = document.createElement('div');
@@ -1642,12 +1701,19 @@ async function init() {
   }
   if (hydratedCount) renderAll();
   updateInfo();
-  // Kick off network loader for the initial batch
+  // Pull the pre-fetched items.json from saorsa-labs/news (refreshed every
+  // 30 min server-side). This populates ALL sources at once in one fast
+  // download — a much better first experience than 269 sequential proxy fetches.
+  const hydratedFromRepo = await hydrateFromItems();
+  if (hydratedFromRepo) {
+    showToast(`Loaded ${state.items.length.toLocaleString()} items from ${hydratedFromRepo} sources`);
+  }
+  // Then top up via CORS proxies for any sources still missing from items.json
+  // (e.g. server-side fetch failed for them) and to refresh anything stale.
   await runLoader(pickInitialBatch().filter(s => !state.loadedSources.has(s.feed)));
   saveCache(cache);
   renderAll();
-  // Background: pull the latest source list from saorsa-labs/news so
-  // even downloaded copies stay current as the upstream catalogue grows.
+  // Finally, check for source-list changes (additions/removals at the catalogue level).
   autoUpdateSources();
 }
 
@@ -1658,6 +1724,135 @@ init().catch(e => {
 </body>
 </html>
 """
+
+# ---------- Server-side feed pre-fetch ----------
+# Up to N items per feed in items.json. The page renders 200 in the timeline
+# and hydrates lazily from this, so 15 is plenty.
+ITEMS_PER_FEED = 15
+SUMMARY_MAX_CHARS = 220
+PARALLEL_WORKERS = 24
+PER_FEED_TIMEOUT_SEC = 18
+
+_TAG_RE = re.compile(r"<[^>]+>")
+_WS_RE = re.compile(r"\s+")
+
+
+def _strip_html(s: str) -> str:
+    if not s:
+        return ""
+    return _WS_RE.sub(" ", html_lib.unescape(_TAG_RE.sub(" ", s))).strip()
+
+
+def _entry_image(entry) -> str:
+    # feedparser exposes media:thumbnail as media_thumbnail, enclosures, etc.
+    try:
+        thumbs = entry.get("media_thumbnail") or []
+        if thumbs:
+            return thumbs[0].get("url", "") or ""
+    except Exception:
+        pass
+    try:
+        for enc in entry.get("enclosures", []) or []:
+            if (enc.get("type") or "").startswith("image/"):
+                return enc.get("href") or enc.get("url") or ""
+    except Exception:
+        pass
+    # Hunt in summary HTML for an <img>
+    summary = entry.get("summary", "") or entry.get("content", [{}])[0].get("value", "") if entry.get("content") else entry.get("summary", "")
+    if isinstance(summary, list):
+        summary = summary[0].get("value", "") if summary else ""
+    m = re.search(r"<img[^>]+src=['\"]([^'\"]+)['\"]", summary or "")
+    return m.group(1) if m else ""
+
+
+def _entry_date(entry) -> str:
+    for key in ("published", "updated", "created"):
+        val = entry.get(key)
+        if val:
+            return val
+    return ""
+
+
+def _normalise_feed_url(url: str) -> str:
+    # Reddit's HTML pages aren't RSS — old.reddit.com still serves a friendly .rss
+    if re.match(r"^https?://(www\.)?reddit\.com/", url, re.I):
+        url = re.sub(r"^https?://(www\.)?reddit\.com", "https://old.reddit.com", url, flags=re.I)
+        if not re.search(r"\.rss(\?|$)", url) and "/.json" not in url:
+            url = url.rstrip("/") + "/.rss"
+    return url
+
+
+def fetch_one_feed(source: dict) -> tuple[str, dict | None, str | None]:
+    """Fetch + parse a single feed. Returns (feed_url, payload | None, error | None)."""
+    feed_url = source["feed"]
+    fetch_url = _normalise_feed_url(feed_url)
+    try:
+        # feedparser handles redirects, gzip, retries internally; we just bound it.
+        # Some feeds (Reddit) reject default UA — feedparser supports request_headers.
+        parsed = feedparser.parse(
+            fetch_url,
+            agent="Mozilla/5.0 (compatible; saorsa-labs-news/1.0; +https://saorsa-labs.github.io/news/)",
+            request_headers={"Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8"},
+        )
+        if parsed.bozo and not parsed.entries:
+            return feed_url, None, f"parse error: {parsed.bozo_exception!r}"
+        if not parsed.entries:
+            return feed_url, None, "no entries"
+        items = []
+        for e in parsed.entries[:ITEMS_PER_FEED]:
+            title = _strip_html(e.get("title", ""))
+            link = e.get("link", "") or ""
+            date = _entry_date(e)
+            summary = e.get("summary", "")
+            if isinstance(summary, list):
+                summary = summary[0] if summary else ""
+            summary = _strip_html(str(summary))[:SUMMARY_MAX_CHARS]
+            image = _entry_image(e)
+            items.append({
+                "title": title or "(no title)",
+                "link": link,
+                "date": date,
+                "summary": summary,
+                **({"image": image} if image else {}),
+            })
+        payload = {
+            "ts": int(time.time() * 1000),
+            "items": items,
+        }
+        return feed_url, payload, None
+    except Exception as ex:
+        return feed_url, None, repr(ex)
+
+
+def fetch_all_feeds(sources: list[dict]) -> tuple[dict, list[tuple[str, str]]]:
+    """Fetch every feed in parallel. Returns (items_by_feed, failures)."""
+    if feedparser is None:
+        print("WARNING: feedparser not installed — skipping items.json prefetch.", file=sys.stderr)
+        print("         pip install feedparser  (or run via the GitHub Action)", file=sys.stderr)
+        return {}, []
+
+    print(f"Fetching {len(sources)} feeds with {PARALLEL_WORKERS} workers …")
+    items_by_feed: dict[str, dict] = {}
+    failures: list[tuple[str, str]] = []
+    t0 = time.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PARALLEL_WORKERS) as pool:
+        futures = {pool.submit(fetch_one_feed, s): s for s in sources}
+        for fut in concurrent.futures.as_completed(futures, timeout=None):
+            try:
+                feed_url, payload, err = fut.result(timeout=PER_FEED_TIMEOUT_SEC + 5)
+            except Exception as ex:
+                src = futures[fut]
+                failures.append((src["feed"], f"timeout/exc: {ex!r}"))
+                continue
+            if payload:
+                items_by_feed[feed_url] = payload
+            else:
+                failures.append((feed_url, err or "unknown"))
+    dt = time.time() - t0
+    print(f"  fetched {len(items_by_feed)}/{len(sources)} in {dt:.1f}s "
+          f"({len(failures)} failed)")
+    return items_by_feed, failures
+
 
 def main() -> int:
     text = fetch_readme()
@@ -1679,10 +1874,22 @@ def main() -> int:
 
     sources_path = ROOT / "sources.json"
     index_path = ROOT / "index.html"
+    items_path = ROOT / "items.json"
     sources_path.write_text(json.dumps(sources, indent=2, ensure_ascii=False))
     index_path.write_text(html_out, encoding="utf-8")
     print(f"Wrote {sources_path.name}")
     print(f"Wrote {index_path.name} ({len(html_out):,} bytes)")
+
+    items, failures = fetch_all_feeds(sources)
+    if items:
+        items_path.write_text(json.dumps(items, ensure_ascii=False, separators=(",", ":")))
+        size_kb = items_path.stat().st_size / 1024
+        total_items = sum(len(v["items"]) for v in items.values())
+        print(f"Wrote {items_path.name} ({size_kb:.0f} KB · {total_items:,} items · "
+              f"{len(failures)} feed(s) failed)")
+        if failures and len(failures) <= 10:
+            for url, err in failures:
+                print(f"  ⚠ {url}: {err[:80]}")
     return 0
 
 

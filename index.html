@@ -731,6 +731,7 @@ a:hover { text-decoration: underline; }
 
 let BUILTIN_SOURCES = JSON.parse(document.getElementById('sources-data').textContent);
 const REMOTE_SOURCES_URL = 'https://raw.githubusercontent.com/saorsa-labs/news/main/sources.json';
+const REMOTE_ITEMS_URL   = 'https://raw.githubusercontent.com/saorsa-labs/news/main/items.json';
 let CUSTOM_FEEDS = [];
 try {
   const raw = localStorage.getItem('ainewshub:custom_feeds:v1');
@@ -1250,6 +1251,52 @@ async function loadAll() {
   els.loadAllBtn.textContent = '✓ All loaded';
 }
 
+// ---------- Server-side pre-fetch hydration ----------
+// items.json is regenerated every 30 min by the GitHub Action and contains
+// up to 15 pre-parsed items per feed. Pulling one ~400KB file beats fetching
+// 269 individual feeds through CORS proxies.
+async function hydrateFromItems() {
+  let text = null;
+  try {
+    const r = await fetch(REMOTE_ITEMS_URL, { cache: 'no-cache' });
+    if (r.ok) text = await r.text();
+  } catch {}
+  if (!text) {
+    try { text = await fetchWithProxies(REMOTE_ITEMS_URL); } catch { return 0; }
+  }
+  let bundle;
+  try { bundle = JSON.parse(text); } catch { return 0; }
+  if (!bundle || typeof bundle !== 'object') return 0;
+  let added = 0;
+  for (const s of SOURCES) {
+    const payload = bundle[s.feed];
+    if (!payload || !Array.isArray(payload.items) || !payload.items.length) continue;
+    const local = cache[s.feed];
+    if (local && (local.ts || 0) >= (payload.ts || 0)) continue; // local is newer
+    cache[s.feed] = { ts: payload.ts || Date.now(), items: payload.items.slice(0, 25) };
+    state.loadedSources.add(s.feed);
+    for (const it of payload.items) {
+      const k = (it.link || it.title) + '|' + s.feed;
+      if (state.itemKeys.has(k)) continue;
+      state.itemKeys.add(k);
+      state.items.push({
+        ...it,
+        source: s.title,
+        sourceCategory: s.category,
+        sourceTags: s.tags,
+        sourceFeed: s.feed,
+      });
+    }
+    added++;
+  }
+  if (added) {
+    saveCache(cache);
+    renderAll();
+    updateInfo();
+  }
+  return added;
+}
+
 // ---------- Auto-update from saorsa-labs/news ----------
 function showToast(msg) {
   const el = document.createElement('div');
@@ -1547,12 +1594,19 @@ async function init() {
   }
   if (hydratedCount) renderAll();
   updateInfo();
-  // Kick off network loader for the initial batch
+  // Pull the pre-fetched items.json from saorsa-labs/news (refreshed every
+  // 30 min server-side). This populates ALL sources at once in one fast
+  // download — a much better first experience than 269 sequential proxy fetches.
+  const hydratedFromRepo = await hydrateFromItems();
+  if (hydratedFromRepo) {
+    showToast(`Loaded ${state.items.length.toLocaleString()} items from ${hydratedFromRepo} sources`);
+  }
+  // Then top up via CORS proxies for any sources still missing from items.json
+  // (e.g. server-side fetch failed for them) and to refresh anything stale.
   await runLoader(pickInitialBatch().filter(s => !state.loadedSources.has(s.feed)));
   saveCache(cache);
   renderAll();
-  // Background: pull the latest source list from saorsa-labs/news so
-  // even downloaded copies stay current as the upstream catalogue grows.
+  // Finally, check for source-list changes (additions/removals at the catalogue level).
   autoUpdateSources();
 }
 
